@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Mente & Manos — Panel</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="historical-data.js"></script>
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <div id="authOverlay" class="auth-overlay hidden">
+    <div class="auth-card">
+      <div class="brand-mark">M&M</div>
+      <h1>Tu panel en la nube</h1>
+      <p>Inicia sesión para sincronizar ventas y publicidad entre tus dispositivos.</p>
+      <label>Email<input id="authEmail" type="email" placeholder="tu@email.com" autocomplete="email" /></label>
+      <label>Contraseña<input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" /></label>
+      <button id="btnLogin" class="btn primary wide">Ingresar</button>
+      <button id="btnSignup" class="btn ghost wide">Crear cuenta</button>
+      <button id="btnUseLocal" class="link-btn">Usar modo local por ahora</button>
+      <small id="authMessage"></small>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">M&M</div>
+        <div><strong>Mente & Manos</strong><span>Panel de control</span></div>
+      </div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span>⌂</span> Dashboard</button>
+        <button class="nav-item" data-view="sale"><span>＋</span> Nueva venta</button>
+        <button class="nav-item" data-view="ads"><span>◉</span> Publicidad</button>
+        <button class="nav-item" data-view="stats"><span>▥</span> Estadísticas</button>
+        <button class="nav-item" data-view="projection"><span>↗</span> Proyección</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Configuración</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="storageBadge" class="storage-badge">Modo local</div>
+        <button id="btnInstall" class="install-btn hidden">Instalar app</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenu" class="mobile-menu">☰</button>
+        <div>
+          <h1 id="viewTitle">Dashboard</h1>
+          <p id="viewSubtitle">Tu negocio en una sola vista.</p>
+        </div>
+        <div class="top-actions">
+          <div class="date-pill" id="todayLabel"></div>
+          <button class="btn primary compact" data-jump="sale">+ Venta</button>
+        </div>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div class="toolbar">
+          <div class="segmented" id="rangeSelector">
+            <button data-range="7">7 días</button>
+            <button data-range="30">30 días</button>
+            <button data-range="month" class="active">Este mes</button>
+            <button data-range="all">Todo</button>
+          </div>
+          <button id="btnRefresh" class="btn ghost compact">Actualizar</button>
+        </div>
+
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="grid-2">
+          <article class="card chart-card">
+            <div class="card-head"><div><h3>Facturación, Ads y resultado</h3><p>Resultado = facturación − Ads con recargo.</p></div></div>
+            <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+          </article>
+          <article class="card goal-card">
+            <div class="card-head"><div><h3>Meta mensual</h3><p id="goalMonthLabel"></p></div></div>
+            <div class="goal-amount"><span id="goalRevenue">S/0</span><small id="goalTarget">de S/10,000</small></div>
+            <div class="progress"><div id="goalBar"></div></div>
+            <div class="goal-meta"><span id="goalPct">0%</span><span id="goalRemaining">Faltan S/0</span></div>
+            <div class="projection-box"><span>Proyección al cierre</span><strong id="monthProjection">S/0</strong><small id="projectionHint">Basado en el ritmo reciente.</small></div>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-head"><div><h3>Campañas</h3><p>Qué puerta de entrada está produciendo dinero.</p></div></div>
+            <div id="campaignCards" class="campaign-list"></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-head"><div><h3>Mezcla de ventas</h3><p>Directas, Combo, VIP y upsells personalizados.</p></div></div>
+            <div class="chart-wrap small"><canvas id="offerChart"></canvas></div>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-head"><div><h3>Lectura automática</h3><p>Señales útiles de los datos seleccionados.</p></div></div>
+          <div id="insights" class="insights"></div>
+        </article>
+      </section>
+
+      <section id="view-sale" class="view">
+        <div class="form-layout">
+          <article class="card form-card">
+            <div class="card-head"><div><h3>Registrar venta</h3><p>Una fila = un cliente que pagó.</p></div></div>
+            <form id="saleForm" class="form-grid">
+              <label>Fecha<input id="saleDate" type="date" required /></label>
+              <label>Hora<input id="saleTime" type="time" /></label>
+              <label>Campaña de origen<select id="saleCampaign" required></select></label>
+              <label>Producto / entrada<select id="saleProduct"></select></label>
+              <label>¿Fue upsell?<select id="saleUpsell"><option value="false">No</option><option value="true">Sí</option></select></label>
+              <label>Oferta final<select id="saleOffer"><option>OPCIÓN / DIRECTA</option><option>COMBO PRO</option><option>VIP FULL</option><option>UPSELL PERSONALIZADO</option><option>PERSONALIZADA</option></select></label>
+              <label>Monto pagado (S/)<input id="saleAmount" type="number" min="0" step="0.10" required /></label>
+              <label>Precio original (S/)<input id="saleOriginal" type="number" min="0" step="0.10" /></label>
+              <label>Seguimiento<select id="saleFollowup"><option>Directo</option><option>Seguimiento 1</option><option>Seguimiento 2</option><option>Seguimiento 3</option><option>Seguimiento</option></select></label>
+              <label class="span-2">Nota opcional<textarea id="saleNotes" rows="3" placeholder="Ej.: negoció VIP a S/25"></textarea></label>
+              <div class="span-2 form-actions"><button type="submit" class="btn primary">Guardar venta</button><button type="button" id="resetSale" class="btn ghost">Limpiar</button></div>
+            </form>
+          </article>
+          <aside class="card helper-card">
+            <h3>Así se guardará</h3>
+            <div class="preview-row"><span>Origen</span><strong id="previewCampaign">—</strong></div>
+            <div class="preview-row"><span>Tipo</span><strong id="previewType">Directa</strong></div>
+            <div class="preview-row"><span>Oferta</span><strong id="previewOffer">—</strong></div>
+            <div class="preview-row"><span>Monto</span><strong id="previewAmount">S/0.00</strong></div>
+            <p class="helper-note">Si negocias un monto diferente, solo escribe el valor real. El panel no lo reemplaza ni lo fuerza a S/29.90.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="view-ads" class="view">
+        <article class="card form-card">
+          <div class="card-head"><div><h3>Publicidad diaria</h3><p>Solo registra conversaciones y gasto de Meta; el resto se calcula solo.</p></div></div>
+          <div class="ads-date"><label>Fecha<input id="adsDate" type="date" /></label></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Campaña</th><th>Conversaciones</th><th>Gasto Ads (S/)</th><th>Gasto real + recargo</th></tr></thead><tbody id="adsRows"></tbody></table></div>
+          <div class="form-actions"><button id="saveAds" class="btn primary">Guardar día</button></div>
+        </article>
+      </section>
+
+      <section id="view-stats" class="view">
+        <div class="toolbar">
+          <div class="filter-row"><label>Desde<input id="statsFrom" type="date" /></label><label>Hasta<input id="statsTo" type="date" /></label><label>Campaña<select id="statsCampaign"><option value="all">Todas</option></select></label><button id="applyStats" class="btn primary compact">Aplicar</button></div>
+        </div>
+        <div class="kpi-grid compact-grid" id="statsKpis"></div>
+        <article class="card">
+          <div class="card-head"><div><h3>Rendimiento por campaña</h3><p>Ingreso atribuido al origen del lead.</p></div></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Campaña</th><th>Chats</th><th>Compradores</th><th>Conversión</th><th>Facturación</th><th>S/chat</th><th>Ads</th><th>ROAS</th><th>Resultado real</th></tr></thead><tbody id="campaignTable"></tbody></table></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h3>Últimos días</h3><p>Resumen diario calculado desde ventas y publicidad.</p></div></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Chats</th><th>Compradores</th><th>Facturación</th><th>Ads reales</th><th>Resultado</th><th>ROAS</th></tr></thead><tbody id="dailyTable"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-projection" class="view">
+        <div class="grid-2">
+          <article class="card form-card">
+            <div class="card-head"><div><h3>Simulador de escala</h3><p>Usa tu rendimiento real para estimar qué pasa al subir presupuesto.</p></div></div>
+            <div class="form-grid">
+              <label>Presupuesto Meta por día (S/)<input id="projBudget" type="number" min="0" step="1" value="70" /></label>
+              <label>Base del rendimiento<select id="projBase"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="all">Todo el historial</option><option value="manual">ROAS manual</option></select></label>
+              <label>ROAS usado<input id="projRoas" type="number" min="0" step="0.01" /></label>
+              <label>Meta de facturación (S/)<input id="projGoal" type="number" min="0" step="100" /></label>
+            </div>
+            <div class="preset-row"><button data-budget="50">S/50</button><button data-budget="70">S/70</button><button data-budget="100">S/100</button><button data-budget="140">S/140</button><button data-budget="200">S/200</button></div>
+          </article>
+          <article class="card projection-result">
+            <div class="projection-big"><span>Facturación mensual estimada</span><strong id="projRevenue">S/0</strong></div>
+            <div class="projection-grid">
+              <div><span>Ads Meta/mes</span><strong id="projAds">S/0</strong></div>
+              <div><span>Ads reales + recargo</span><strong id="projRealAds">S/0</strong></div>
+              <div><span>Resultado estimado</span><strong id="projProfit">S/0</strong></div>
+              <div><span>Margen</span><strong id="projMargin">0%</strong></div>
+              <div><span>Chats estimados</span><strong id="projChats">0</strong></div>
+              <div><span>Presupuesto/día para meta</span><strong id="projGoalBudget">S/0</strong></div>
+            </div>
+            <small>Proyección matemática; al escalar, ROAS y costo por conversación pueden cambiar.</small>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="grid-2">
+          <article class="card form-card">
+            <div class="card-head"><div><h3>Negocio</h3><p>Cambia estas cifras sin tocar código.</p></div></div>
+            <div class="form-grid">
+              <label>Recargo real de Ads (%)<input id="setSurcharge" type="number" step="0.1" /></label>
+              <label>Meta mensual (S/)<input id="setGoal" type="number" step="100" /></label>
+              <label>ChatGPT Plus / mes (S/)<input id="setChatgpt" type="number" step="0.1" /></label>
+              <label>Combo PRO (S/)<input id="setCombo" type="number" step="0.1" /></label>
+              <label>VIP FULL (S/)<input id="setVip" type="number" step="0.1" /></label>
+              <label>Precio base ING1 (S/)<input id="setIng1" type="number" step="0.1" /></label>
+              <label>Precio base ING3/4 (S/)<input id="setIng34" type="number" step="0.1" /></label>
+              <label>Precio base ING7 (S/)<input id="setIng7" type="number" step="0.1" /></label>
+              <label class="span-2">Campañas activas (separadas por coma)<input id="setCampaigns" type="text" /></label>
+              <div class="span-2 form-actions"><button id="saveSettings" class="btn primary">Guardar configuración</button></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head"><div><h3>Datos y nube</h3><p id="cloudStatus">Modo local.</p></div></div>
+            <div class="settings-actions">
+              <button id="exportBackup" class="btn ghost">Exportar copia JSON</button>
+              <label class="btn ghost file-btn">Importar copia<input id="importBackup" type="file" accept="application/json" /></label>
+              <button id="importHistory" class="btn ghost">Importar historial de MyM.xlsx</button>
+              <button id="btnLogout" class="btn danger hidden">Cerrar sesión</button>
+            </div>
+            <div class="cloud-help">
+              <strong>Para guardar en la nube</strong>
+              <ol><li>Crea un proyecto gratis en Supabase.</li><li>Ejecuta <code>supabase_schema.sql</code>.</li><li>Pega tu Project URL y anon key en <code>config.js</code>.</li><li>Publica esta carpeta con GitHub Pages.</li></ol>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
