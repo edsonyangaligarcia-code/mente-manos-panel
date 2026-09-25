@@ -6,7 +6,7 @@
   const PEN = new Intl.NumberFormat('es-PE', {style:'currency', currency:'PEN', maximumFractionDigits:2});
   const INT = new Intl.NumberFormat('es-PE', {maximumFractionDigits:0});
   const DEC = new Intl.NumberFormat('es-PE', {maximumFractionDigits:2});
-  const PRODUCTS = ['ING 1','ING 2','ING 3','ING 4','ING 5','ING 6','ING 7','ING 8','Otro'];
+  const PRODUCTS = ['ING 1','ING 2','ING 3','ING 4','ING 3 y 4','ING 5','ING 6','ING 7','ING 8','Otro'];
   const DEFAULT_SETTINGS = {
     ad_surcharge_pct: 18,
     monthly_goal: 10000,
@@ -31,6 +31,16 @@
   function humanDate(s){ if(!s) return '—'; return new Intl.DateTimeFormat('es-PE',{day:'2-digit',month:'short',year:'numeric'}).format(toDate(s)); }
   function monthName(s){ return new Intl.DateTimeFormat('es-PE',{month:'long',year:'numeric'}).format(toDate(s)); }
   function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`); }
+  function lastSalePrefs(){
+    try{return JSON.parse(localStorage.getItem('mym_last_sale_prefs')||'{}')}catch{return {}}
+  }
+  function saveLastSalePrefs(s){
+    localStorage.setItem('mym_last_sale_prefs',JSON.stringify({campaign:s.campaign,product:s.product}));
+  }
+  function compareDelta(current, previous){
+    if(!previous) return current>0 ? null : 0;
+    return (current-previous)/Math.abs(previous);
+  }
   function escapeHtml(v){ return String(v??'').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
   function toast(msg, isError=false){ const el=$('toast'); el.textContent=msg; el.className=`toast show${isError?' error':''}`; clearTimeout(el._t); el._t=setTimeout(()=>el.className='toast',2600); }
   function latestDataDate(){ const dates=[...state.sales.map(x=>x.sale_date),...state.ads.map(x=>x.ad_date)].filter(Boolean).sort(); return dates.at(-1) || isoToday(); }
@@ -129,10 +139,13 @@
   }
 
   function rangeBounds(range){
-    const end=latestDataDate();
-    if(range==='all') return {start:'0000-01-01',end};
-    if(range==='month') return {start:`${end.slice(0,7)}-01`,end};
-    const days=num(range)||30; return {start:dateAdd(end,-days+1),end};
+    const today=isoToday();
+    if(range==='today') return {start:today,end:today};
+    if(range==='yesterday'){ const y=dateAdd(today,-1); return {start:y,end:y}; }
+    if(range==='all') return {start:'0000-01-01',end:today};
+    if(range==='month') return {start:`${today.slice(0,7)}-01`,end:today};
+    const days=num(range)||30;
+    return {start:dateAdd(today,-days+1),end:today};
   }
   function within(d,start,end){ return d>=start && d<=end; }
   function filterData(range=state.range, campaign='all', custom=null){
@@ -187,7 +200,51 @@
       kpi('Margen tras Ads',pct(m.margin),`CPA real ${money(m.realCpa)}`,m.margin>=0?'positive':'negative')
     ].join('');
 
-    renderDailyChart(groupDaily(sales,ads)); renderOfferChart(sales); renderCampaignCards(groupCampaign(sales,ads)); renderGoal(); renderInsights(m,groupCampaign(sales,ads),sales);
+    const campaignRows=groupCampaign(sales,ads);
+    renderDailyChart(groupDaily(sales,ads));
+    renderOfferChart(sales);
+    renderCampaignCards(campaignRows);
+    renderDailyPulse();
+    renderCampaignAlerts();
+    renderGoal();
+    renderInsights(m,campaignRows,sales);
+  }
+
+  function renderDailyPulse(){
+    const today=isoToday(), yesterday=dateAdd(today,-1);
+    const td=filterData('all','all',{start:today,end:today}), yd=filterData('all','all',{start:yesterday,end:yesterday});
+    const tm=metrics(td.sales,td.ads), ym=metrics(yd.sales,yd.ads);
+    const profitDelta=compareDelta(tm.profit,ym.profit);
+    const deltaText=profitDelta==null?'sin comparación':`${profitDelta>=0?'+':''}${DEC.format(profitDelta*100)}% vs ayer`;
+    const provisional=td.ads.length===0 ? 'Ads de hoy aún no cargados' : deltaText;
+    $('dailyPulse').innerHTML=[
+      `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
+      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${money(tm.realAds)}</strong><small>${INT.format(tm.conversations)} chats</small></div>`,
+      `<div class="pulse-item ${tm.profit>=0?'good':'bad'}"><span>Resultado hoy</span><strong>${money(tm.profit)}</strong><small>${provisional}</small></div>`,
+      `<div class="pulse-item"><span>Conversión hoy</span><strong>${pct(tm.conversion)}</strong><small>ayer ${pct(ym.conversion)}</small></div>`,
+      `<div class="pulse-item"><span>ROAS hoy</span><strong>${tm.adSpend?DEC.format(tm.roas):'—'}</strong><small>ayer ${ym.adSpend?DEC.format(ym.roas):'—'}</small></div>`
+    ].join('');
+  }
+
+  function campaignDailyRows(campaign){
+    const sales=state.sales.filter(s=>s.campaign===campaign), ads=state.ads.filter(a=>a.campaign===campaign && num(a.ad_spend)>0);
+    return groupDaily(sales,ads).filter(x=>x.adSpend>0);
+  }
+
+  function renderCampaignAlerts(){
+    const campaigns=state.settings.active_campaigns||[];
+    const lowThreshold=Math.max(1.5, realMultiplier()+0.2);
+    const watchThreshold=Math.max(2.0, realMultiplier()+0.65);
+    const rows=campaigns.map(campaign=>{
+      const days=campaignDailyRows(campaign).slice(-3);
+      if(!days.length) return {campaign,tone:'amber',icon:'·',badge:'Sin muestra',msg:'Aún no hay días con gasto suficientes para evaluar.'};
+      const lowCount=days.filter(x=>x.roas<lowThreshold).length;
+      const avg=days.reduce((a,x)=>a+x.roas,0)/days.length;
+      if(days.length>=3 && lowCount===3) return {campaign,tone:'red',icon:'!',badge:'Revisar',msg:`ROAS < ${DEC.format(lowThreshold)} en los últimos 3 días con gasto. Promedio ${DEC.format(avg)}.`};
+      if((days.length>=2 && lowCount>=2) || avg<watchThreshold) return {campaign,tone:'amber',icon:'↘',badge:'Vigilar',msg:`ROAS promedio reciente ${DEC.format(avg)}. No aumentaría presupuesto hasta mejorar.`};
+      return {campaign,tone:'green',icon:'✓',badge:'Saludable',msg:`ROAS promedio reciente ${DEC.format(avg)}. Sin alerta sostenida.`};
+    });
+    $('campaignAlerts').innerHTML=rows.map(x=>`<div class="alert-row ${x.tone}"><div class="alert-main"><div class="alert-icon">${x.icon}</div><div><strong>${escapeHtml(x.campaign)}</strong><p>${x.msg}</p></div></div><span class="alert-badge">${x.badge}</span></div>`).join('');
   }
 
   function renderDailyChart(rows){
@@ -213,7 +270,7 @@
     }).join('') || '<p>Sin datos en este periodo.</p>';
   }
   function renderGoal(){
-    const anchor=latestDataDate(), start=`${anchor.slice(0,7)}-01`, {sales,ads}=filterData('all','all',{start,end:anchor}); const m=metrics(sales,ads), goal=num(state.settings.monthly_goal)||10000;
+    const anchor=isoToday(), start=`${anchor.slice(0,7)}-01`, {sales,ads}=filterData('all','all',{start,end:anchor}); const m=metrics(sales,ads), goal=num(state.settings.monthly_goal)||10000;
     const pctv=goal?m.revenue/goal:0; $('goalMonthLabel').textContent=monthName(anchor); $('goalRevenue').textContent=money(m.revenue); $('goalTarget').textContent=`de ${money(goal)}`; $('goalBar').style.width=`${Math.min(100,pctv*100)}%`; $('goalPct').textContent=`${DEC.format(pctv*100)}%`; $('goalRemaining').textContent=m.revenue>=goal?'Meta alcanzada':`Faltan ${money(goal-m.revenue)}`;
     const d=toDate(anchor), elapsed=d.getDate(), days=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(), projected=elapsed?m.revenue/elapsed*days:0; $('monthProjection').textContent=money(projected); $('projectionHint').textContent=`Ritmo medio del mes (${elapsed} días transcurridos).`;
   }
@@ -246,12 +303,39 @@
   function updateSalePreview(){
     $('previewCampaign').textContent=$('saleCampaign').value||'—'; $('previewType').textContent=$('saleUpsell').value==='true'?'Upsell':'Directa'; $('previewOffer').textContent=$('saleOffer').value||'—'; $('previewAmount').textContent=money($('saleAmount').value);
   }
-  function autoPrice(){
-    const offer=$('saleOffer').value,c=$('saleCampaign').value; let v=null;
-    if(offer==='COMBO PRO')v=state.settings.combo_price; else if(offer==='VIP FULL')v=state.settings.vip_price; else if(offer==='OPCIÓN / DIRECTA')v=state.settings.base_prices?.[c];
-    if(v!=null) $('saleAmount').value=num(v).toFixed(2); updateSalePreview();
+  function syncQuickOfferButtons(){
+    qsa('[data-quick-offer]').forEach(b=>b.classList.toggle('active',b.dataset.quickOffer===$('saleOffer').value));
   }
-  function resetSaleForm(){ $('saleForm').reset(); $('saleDate').value=isoToday(); $('saleTime').value=new Date().toTimeString().slice(0,5); populateCampaigns(); autoPrice(); updateSalePreview(); }
+  function autoPrice(){
+    const offer=$('saleOffer').value,c=$('saleCampaign').value;
+    let v=null;
+    if(offer==='COMBO PRO') v=state.settings.combo_price;
+    else if(offer==='VIP FULL') v=state.settings.vip_price;
+    else if(offer==='OPCIÓN / DIRECTA') v=state.settings.base_prices?.[c];
+    if(v!=null) $('saleAmount').value=num(v).toFixed(2);
+    if(['COMBO PRO','VIP FULL','UPSELL PERSONALIZADO'].includes(offer)) $('saleUpsell').value='true';
+    else if(offer==='OPCIÓN / DIRECTA') $('saleUpsell').value='false';
+    if(c==='ING 1'||c==='ING 7'||c==='ING 3 y 4') {
+      if([...$('saleProduct').options].some(o=>o.value===c)) $('saleProduct').value=c;
+    }
+    syncQuickOfferButtons();
+    updateSalePreview();
+  }
+  function resetSaleForm(){
+    const prefs=lastSalePrefs();
+    $('saleForm').reset();
+    $('saleDate').value=isoToday();
+    $('saleTime').value=new Date().toTimeString().slice(0,5);
+    populateCampaigns();
+    if(prefs.campaign && [...$('saleCampaign').options].some(o=>o.value===prefs.campaign)) $('saleCampaign').value=prefs.campaign;
+    if(prefs.product && [...$('saleProduct').options].some(o=>o.value===prefs.product)) $('saleProduct').value=prefs.product;
+    $('saleOffer').value='OPCIÓN / DIRECTA';
+    $('saleUpsell').value='false';
+    $('saleFollowup').value='Directo';
+    autoPrice();
+    syncQuickOfferButtons();
+    updateSalePreview();
+  }
 
   async function saveSale(e){
     e.preventDefault();
@@ -260,6 +344,7 @@
     try{
       if(state.mode==='supabase'){ const saved=await cloudInsertSale(s); state.sales.push(saved); }
       else{ state.sales.push(s); saveLocal(); }
+      saveLastSalePrefs(s);
       toast(`Venta guardada: ${money(s.amount)}`); resetSaleForm(); renderAll();
     }catch(err){console.error(err);toast('No se pudo guardar la venta.',true)}
   }
@@ -298,11 +383,41 @@
   function baseMetricsForProjection(){
     const base=$('projBase').value; if(base==='manual') return null; const {sales,ads}=filterData(base==='all'?'all':base); return metrics(sales,ads);
   }
+  function renderScaleRoadmap(roas, base){
+    const body=$('scaleRoadmap'); if(!body) return;
+    if(!roas){ body.innerHTML='<tr><td colspan="5">Necesitamos ROAS para crear la ruta.</td></tr>'; return; }
+    const uniqueDays=new Set((filterData($('projBase').value==='all'?'all':($('projBase').value==='manual'?'30':$('projBase').value)).ads||[]).filter(a=>num(a.ad_spend)>0).map(a=>a.ad_date));
+    const currentDaily=base && uniqueDays.size ? base.adSpend/uniqueDays.size : num($('projBudget').value);
+    const target=num($('projGoal').value)||num(state.settings.monthly_goal);
+    const targetBudget=target/(roas*30);
+    let b=Math.max(1,currentDaily||num($('projBudget').value)||50);
+    const budgets=[b];
+    for(let i=0;i<7 && b<targetBudget*0.98;i++){
+      b=Math.min(targetBudget,b*1.15);
+      if(b-budgets.at(-1)>0.5) budgets.push(b);
+      if(b>=targetBudget*0.98) break;
+    }
+    if(targetBudget>budgets.at(-1)+0.5) budgets.push(targetBudget);
+    const threshold=Math.max(2.2,realMultiplier()+0.7);
+    const start=isoToday();
+    body.innerHTML=budgets.slice(0,9).map((budget,i)=>{
+      const rev=budget*30*roas, realAds=budget*30*realMultiplier(), profit=rev-realAds-num(state.settings.chatgpt_cost);
+      return `<tr><td>${humanDate(dateAdd(start,i*4))}</td><td><strong>${money(budget)}</strong></td><td>${money(rev)}</td><td>${money(profit)}</td><td>Subir solo si ROAS 3 días ≥ ${DEC.format(threshold)}</td></tr>`;
+    }).join('');
+  }
+
   function renderProjection(){
-    const base=baseMetricsForProjection(); if(base){$('projRoas').value=base.roas?base.roas.toFixed(2):'0.00'; $('projRoas').readOnly=true;} else $('projRoas').readOnly=false;
-    const roas=num($('projRoas').value), budget=num($('projBudget').value), goal=num($('projGoal').value)||num(state.settings.monthly_goal), registeredAds=budget*30, revenue=registeredAds*roas, realAds=registeredAds*realMultiplier(), profit=revenue-realAds-num(state.settings.chatgpt_cost), margin=revenue?profit/revenue:0;
-    const cpc=base?.cpc || metrics(filterData('30').sales,filterData('30').ads).cpc; const chats=cpc?registeredAds/cpc:0; const goalBudget=roas?goal/(roas*30):0;
+    const base=baseMetricsForProjection();
+    if(base){$('projRoas').value=base.roas?base.roas.toFixed(2):'0.00'; $('projRoas').readOnly=true;}
+    else $('projRoas').readOnly=false;
+    const roas=num($('projRoas').value), budget=num($('projBudget').value), goal=num($('projGoal').value)||num(state.settings.monthly_goal);
+    const registeredAds=budget*30, revenue=registeredAds*roas, realAds=registeredAds*realMultiplier(), profit=revenue-realAds-num(state.settings.chatgpt_cost), margin=revenue?profit/revenue:0;
+    const fallback=filterData('30'), cpc=base?.cpc || metrics(fallback.sales,fallback.ads).cpc, chats=cpc?registeredAds/cpc:0, goalBudget=roas?goal/(roas*30):0;
     $('projRevenue').textContent=money(revenue); $('projAds').textContent=money(registeredAds); $('projRealAds').textContent=money(realAds); $('projProfit').textContent=money(profit); $('projMargin').textContent=pct(margin); $('projChats').textContent=INT.format(chats); $('projGoalBudget').textContent=`${money(goalBudget)}/día`;
+    if($('projConservative')) $('projConservative').textContent=money(registeredAds*(roas*.85));
+    if($('projBaseRevenue')) $('projBaseRevenue').textContent=money(revenue);
+    if($('projOptimistic')) $('projOptimistic').textContent=money(registeredAds*(roas*1.15));
+    renderScaleRoadmap(roas,base);
   }
 
   function renderAll(){
@@ -399,7 +514,12 @@
   function bind(){
     qsa('.nav-item').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view))); qsa('[data-jump]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.jump))); $('mobileMenu').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
     qsa('#rangeSelector button').forEach(b=>b.addEventListener('click',()=>{qsa('#rangeSelector button').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.range=b.dataset.range;renderDashboard();})); $('btnRefresh').addEventListener('click',renderAll);
-    $('saleForm').addEventListener('submit',saveSale); $('resetSale').addEventListener('click',resetSaleForm); ['saleCampaign','saleOffer'].forEach(id=>$(id).addEventListener('change',autoPrice)); ['saleUpsell','saleAmount'].forEach(id=>$(id).addEventListener('input',updateSalePreview));
+    $('saleForm').addEventListener('submit',saveSale);
+    $('resetSale').addEventListener('click',resetSaleForm);
+    ['saleCampaign','saleOffer'].forEach(id=>$(id).addEventListener('change',autoPrice));
+    ['saleUpsell','saleAmount'].forEach(id=>$(id).addEventListener('input',updateSalePreview));
+    qsa('[data-quick-offer]').forEach(b=>b.addEventListener('click',()=>{$('saleOffer').value=b.dataset.quickOffer;autoPrice();}));
+
     $('adsDate').addEventListener('change',loadAdsForDate); $('adsRows').addEventListener('input',e=>{const tr=e.target.closest('tr');if(tr)updateAdRealRow(tr)}); $('saveAds').addEventListener('click',saveAdsDay);
     $('applyStats').addEventListener('click',renderStats); $('saveSettings').addEventListener('click',saveSettings); $('exportBackup').addEventListener('click',exportBackup); $('importBackup').addEventListener('change',e=>e.target.files[0]&&importBackupFile(e.target.files[0])); $('importHistory')?.addEventListener('click',importHistory);
     ['projBudget','projRoas','projGoal'].forEach(id=>$(id).addEventListener('input',renderProjection)); $('projBase').addEventListener('change',renderProjection); qsa('[data-budget]').forEach(b=>b.addEventListener('click',()=>{$('projBudget').value=b.dataset.budget;renderProjection()}));
