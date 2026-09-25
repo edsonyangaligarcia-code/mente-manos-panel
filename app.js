@@ -95,7 +95,12 @@
       state.sb.from('ad_daily').select('*').eq('user_id',uidv).order('ad_date',{ascending:true}),
       state.sb.from('user_settings').select('*').eq('user_id',uidv).maybeSingle()
     ]);
-    if(se||ae||ste){ console.error(se||ae||ste); toast('Error cargando datos de la nube.',true); return; }
+    if(se||ae||ste){
+      const err=se||ae||ste;
+      console.error(err);
+      toast(`Error nube: ${err.message||err.code||'desconocido'}`,true);
+      return;
+    }
     state.sales=(sales||[]).map(x=>({...x,amount:num(x.amount),original_price:x.original_price==null?null:num(x.original_price),discount:x.discount==null?null:num(x.discount)}));
     state.ads=(ads||[]).map(x=>({...x,conversations:num(x.conversations),ad_spend:num(x.ad_spend)}));
     state.settings=mergedSettings(settings||{});
