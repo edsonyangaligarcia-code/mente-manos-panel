@@ -1,0 +1,12 @@
+{
+  "name": "Mente & Manos — Panel",
+  "short_name": "M&M Panel",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#111827",
+  "description": "Panel de ventas, publicidad y rentabilidad de Mente & Manos",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
