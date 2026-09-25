@@ -313,6 +313,7 @@
     else if(offer==='VIP FULL') v=state.settings.vip_price;
     else if(offer==='OPCIÓN / DIRECTA') v=state.settings.base_prices?.[c];
     if(v!=null) $('saleAmount').value=num(v).toFixed(2);
+    else if(['UPSELL PERSONALIZADO','PERSONALIZADA'].includes(offer)) $('saleAmount').value='';
     if(['COMBO PRO','VIP FULL','UPSELL PERSONALIZADO'].includes(offer)) $('saleUpsell').value='true';
     else if(offer==='OPCIÓN / DIRECTA') $('saleUpsell').value='false';
     if(c==='ING 1'||c==='ING 7'||c==='ING 3 y 4') {
