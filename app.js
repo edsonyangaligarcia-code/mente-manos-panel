@@ -189,15 +189,17 @@
 
   function renderDashboard(){
     const {sales,ads}=filterData(); const m=metrics(sales,ads);
+    const hasAds=ads.length>0 && m.adSpend>0;
+    const hasChats=m.conversations>0;
     $('kpiGrid').innerHTML=[
       kpi('Facturación',money(m.revenue),`${INT.format(m.buyers)} compradores`),
-      kpi('Resultado real',money(m.profit),`después de Ads +${DEC.format(state.settings.ad_surcharge_pct)}%`,m.profit>=0?'positive':'negative'),
-      kpi('Ads reales',money(m.realAds),`${money(m.adSpend)} registrado en Meta`),
-      kpi('Conversaciones',INT.format(m.conversations),`Costo/chat ${money(m.cpc)}`),
-      kpi('Conversión real',pct(m.conversion),`${INT.format(m.buyers)} pagos / ${INT.format(m.conversations)} chats`),
-      kpi('ROAS',DEC.format(m.roas),`ROAS sobre costo real ${DEC.format(m.realRoas)}`),
-      kpi('Facturación/chat',money(m.rpc),`Ticket ${money(m.ticket)}`),
-      kpi('Margen tras Ads',pct(m.margin),`CPA real ${money(m.realCpa)}`,m.margin>=0?'positive':'negative')
+      kpi(hasAds?'Resultado real':'Resultado provisional',money(m.profit),hasAds?`después de Ads +${DEC.format(state.settings.ad_surcharge_pct)}%`:'sin Ads registrados en este rango',m.profit>=0?'positive':'negative'),
+      kpi('Ads reales',hasAds?money(m.realAds):'—',hasAds?`${money(m.adSpend)} registrado en Meta`:'faltan datos de Meta'),
+      kpi('Conversaciones',hasChats?INT.format(m.conversations):'—',hasChats?`Costo/chat ${money(m.cpc)}`:'faltan conversaciones del rango'),
+      kpi('Conversión real',hasChats?pct(m.conversion):'—',hasChats?`${INT.format(m.buyers)} pagos / ${INT.format(m.conversations)} chats`:'sin denominador todavía'),
+      kpi('ROAS',hasAds?DEC.format(m.roas):'—',hasAds?`ROAS sobre costo real ${DEC.format(m.realRoas)}`:'se calcula al registrar Ads'),
+      kpi('Facturación/chat',hasChats?money(m.rpc):'—',`Ticket ${money(m.ticket)}`),
+      kpi('Margen tras Ads',hasAds?pct(m.margin):'—',hasAds?`CPA real ${money(m.realCpa)}`:'provisional hasta cargar Ads',m.margin>=0?'positive':'negative')
     ].join('');
 
     const campaignRows=groupCampaign(sales,ads);
@@ -221,7 +223,7 @@
       `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
       `<div class="pulse-item"><span>Ads reales hoy</span><strong>${money(tm.realAds)}</strong><small>${INT.format(tm.conversations)} chats</small></div>`,
       `<div class="pulse-item ${tm.profit>=0?'good':'bad'}"><span>Resultado hoy</span><strong>${money(tm.profit)}</strong><small>${provisional}</small></div>`,
-      `<div class="pulse-item"><span>Conversión hoy</span><strong>${pct(tm.conversion)}</strong><small>ayer ${pct(ym.conversion)}</small></div>`,
+      `<div class="pulse-item"><span>Conversión hoy</span><strong>${tm.conversations?pct(tm.conversion):'—'}</strong><small>ayer ${ym.conversations?pct(ym.conversion):'—'}</small></div>`,
       `<div class="pulse-item"><span>ROAS hoy</span><strong>${tm.adSpend?DEC.format(tm.roas):'—'}</strong><small>ayer ${ym.adSpend?DEC.format(ym.roas):'—'}</small></div>`
     ].join('');
   }
