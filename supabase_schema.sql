@@ -75,3 +75,16 @@ drop policy if exists "settings_update_own" on public.user_settings;
 create policy "settings_select_own" on public.user_settings for select using (auth.uid() = user_id);
 create policy "settings_insert_own" on public.user_settings for insert with check (auth.uid() = user_id);
 create policy "settings_update_own" on public.user_settings for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+
+-- Data API privileges
+-- Required on projects where new tables are not exposed automatically.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on table public.sales to authenticated;
+grant select, insert, update, delete on table public.ad_daily to authenticated;
+grant select, insert, update, delete on table public.user_settings to authenticated;
+
+-- Anonymous visitors do not need access to business data.
+revoke all on table public.sales from anon;
+revoke all on table public.ad_daily from anon;
+revoke all on table public.user_settings from anon;
