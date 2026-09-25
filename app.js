@@ -308,11 +308,66 @@
     const payload={version:1,exported_at:new Date().toISOString(),settings:state.settings,sales:state.sales,ads:state.ads}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`mym-backup-${isoToday()}.json`; a.click(); URL.revokeObjectURL(a.href);
   }
   async function importBackupFile(file){
-    try{ const data=JSON.parse(await file.text()); if(!Array.isArray(data.sales)||!Array.isArray(data.ads))throw new Error('Formato inválido');
-      if(!confirm('Esto reemplazará los datos cargados actualmente en modo local. ¿Continuar?'))return;
-      if(state.mode==='supabase'){ toast('Para evitar duplicados, la importación completa de backup se habilita primero en modo local.',true); return; }
-      state.sales=data.sales; state.ads=data.ads; state.settings=mergedSettings(data.settings||{}); saveLocal(); renderAll(); toast('Copia importada.');
-    }catch(e){console.error(e);toast('Archivo de copia no válido.',true)}
+    try{
+      const raw=JSON.parse(await file.text());
+      const normalizeSale=(s)=> s.sale_date ? {
+        ...s, amount:num(s.amount), original_price:s.original_price==null?null:num(s.original_price),
+        discount:s.discount==null?null:num(s.discount)
+      } : {
+        id:uid(), sale_date:s.date, sale_time:s.time||null, campaign:s.product||'Histórico',
+        product:s.product||'', upsell:Boolean(s.upsell), offer_type:s.offer_type||'HISTÓRICA',
+        amount:num(s.sold_price), original_price:s.original_price==null?null:num(s.original_price),
+        followup_stage:s.followup_stage||'Directo', discount:s.discount==null?null:num(s.discount),
+        notes:'Migrado desde MyM.xlsx'
+      };
+      const normalizeAd=(a)=> a.ad_date ? {
+        ...a, conversations:num(a.conversations), ad_spend:num(a.ad_spend)
+      } : {
+        id:uid(), ad_date:a.date, campaign:a.campaign, conversations:num(a.conversations), ad_spend:num(a.ad_spend)
+      };
+      const data={
+        settings:mergedSettings(raw.settings||{}),
+        sales:(raw.sales||[]).map(normalizeSale),
+        ads:(raw.ads||[]).map(normalizeAd)
+      };
+      if(!Array.isArray(data.sales)||!Array.isArray(data.ads)) throw new Error('Formato inválido');
+
+      if(state.mode==='supabase'){
+        if(!state.user) throw new Error('Inicia sesión primero');
+        if(!confirm('Se importará tu historial privado a Supabase. Los registros que ya existan se omitirán cuando sea posible. ¿Continuar?')) return;
+        const sk=new Set(state.sales.map(saleKey)), ak=new Set(state.ads.map(adKey));
+        const newS=data.sales.filter(s=>!sk.has(saleKey(s)));
+        const newA=data.ads.filter(a=>!ak.has(adKey(a)));
+
+        for(let i=0;i<newS.length;i+=100){
+          const rows=newS.slice(i,i+100).map(s=>({
+            user_id:state.user.id, sale_date:s.sale_date, sale_time:s.sale_time||null,
+            campaign:s.campaign||'Histórico', product:s.product||null, upsell:Boolean(s.upsell),
+            offer_type:s.offer_type||'HISTÓRICA', amount:num(s.amount),
+            original_price:s.original_price==null?null:num(s.original_price),
+            followup_stage:s.followup_stage||'Directo',
+            discount:s.discount==null?null:num(s.discount), notes:s.notes||null
+          }));
+          const {error}=await state.sb.from('sales').insert(rows); if(error) throw error;
+        }
+        for(let i=0;i<newA.length;i+=100){
+          const rows=newA.slice(i,i+100).map(a=>({
+            user_id:state.user.id, ad_date:a.ad_date, campaign:a.campaign,
+            conversations:num(a.conversations), ad_spend:num(a.ad_spend)
+          }));
+          const {error}=await state.sb.from('ad_daily').upsert(rows,{onConflict:'user_id,ad_date,campaign'}); if(error) throw error;
+        }
+        state.settings=mergedSettings({...state.settings,...data.settings});
+        await cloudSaveSettings();
+        await loadCloud();
+        toast(`Historial importado: +${newS.length} ventas y +${newA.length} registros de Ads.`);
+        return;
+      }
+
+      if(!confirm('Esto reemplazará los datos guardados actualmente en este navegador. ¿Continuar?')) return;
+      state.sales=data.sales; state.ads=data.ads; state.settings=data.settings; saveLocal(); renderAll();
+      toast('Copia privada importada correctamente.');
+    }catch(e){console.error(e);toast('Archivo de copia no válido o no se pudo importar.',true)}
   }
   function saleKey(s){return [s.sale_date,s.sale_time||'',s.campaign,s.amount,s.upsell?'1':'0'].join('|')}
   function adKey(a){return [a.ad_date,a.campaign].join('|')}
@@ -341,7 +396,7 @@
     qsa('#rangeSelector button').forEach(b=>b.addEventListener('click',()=>{qsa('#rangeSelector button').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.range=b.dataset.range;renderDashboard();})); $('btnRefresh').addEventListener('click',renderAll);
     $('saleForm').addEventListener('submit',saveSale); $('resetSale').addEventListener('click',resetSaleForm); ['saleCampaign','saleOffer'].forEach(id=>$(id).addEventListener('change',autoPrice)); ['saleUpsell','saleAmount'].forEach(id=>$(id).addEventListener('input',updateSalePreview));
     $('adsDate').addEventListener('change',loadAdsForDate); $('adsRows').addEventListener('input',e=>{const tr=e.target.closest('tr');if(tr)updateAdRealRow(tr)}); $('saveAds').addEventListener('click',saveAdsDay);
-    $('applyStats').addEventListener('click',renderStats); $('saveSettings').addEventListener('click',saveSettings); $('exportBackup').addEventListener('click',exportBackup); $('importBackup').addEventListener('change',e=>e.target.files[0]&&importBackupFile(e.target.files[0])); $('importHistory').addEventListener('click',importHistory);
+    $('applyStats').addEventListener('click',renderStats); $('saveSettings').addEventListener('click',saveSettings); $('exportBackup').addEventListener('click',exportBackup); $('importBackup').addEventListener('change',e=>e.target.files[0]&&importBackupFile(e.target.files[0])); $('importHistory')?.addEventListener('click',importHistory);
     ['projBudget','projRoas','projGoal'].forEach(id=>$(id).addEventListener('input',renderProjection)); $('projBase').addEventListener('change',renderProjection); qsa('[data-budget]').forEach(b=>b.addEventListener('click',()=>{$('projBudget').value=b.dataset.budget;renderProjection()}));
     $('btnLogin').addEventListener('click',async()=>{try{const {error}=await state.sb.auth.signInWithPassword({email:$('authEmail').value,password:$('authPassword').value});if(error)throw error;$('authMessage').textContent='';}catch(e){$('authMessage').textContent=e.message||'No se pudo ingresar.'}});
     $('btnSignup').addEventListener('click',async()=>{try{const {error}=await state.sb.auth.signUp({email:$('authEmail').value,password:$('authPassword').value});if(error)throw error;$('authMessage').textContent='Cuenta creada. Si Supabase solicita confirmación, revisa tu correo.';}catch(e){$('authMessage').textContent=e.message||'No se pudo crear la cuenta.'}});
