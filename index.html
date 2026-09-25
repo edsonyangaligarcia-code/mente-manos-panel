@@ -66,6 +66,8 @@
       <section id="view-dashboard" class="view active">
         <div class="toolbar">
           <div class="segmented" id="rangeSelector">
+            <button data-range="today">Hoy</button>
+            <button data-range="yesterday">Ayer</button>
             <button data-range="7">7 días</button>
             <button data-range="30">30 días</button>
             <button data-range="month" class="active">Este mes</button>
@@ -75,6 +77,13 @@
         </div>
 
         <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div id="dailyPulse" class="daily-pulse"></div>
+
+        <article id="alertsCard" class="card alerts-card">
+          <div class="card-head"><div><h3>Alertas de campañas</h3><p>Detecta campañas con ROAS bajo durante varios días seguidos.</p></div></div>
+          <div id="campaignAlerts" class="alerts-list"></div>
+        </article>
 
         <div class="grid-2">
           <article class="card chart-card">
@@ -111,18 +120,44 @@
         <div class="form-layout">
           <article class="card form-card">
             <div class="card-head"><div><h3>Registrar venta</h3><p>Una fila = un cliente que pagó.</p></div></div>
-            <form id="saleForm" class="form-grid">
-              <label>Fecha<input id="saleDate" type="date" required /></label>
-              <label>Hora<input id="saleTime" type="time" /></label>
-              <label>Campaña de origen<select id="saleCampaign" required></select></label>
-              <label>Producto / entrada<select id="saleProduct"></select></label>
-              <label>¿Fue upsell?<select id="saleUpsell"><option value="false">No</option><option value="true">Sí</option></select></label>
-              <label>Oferta final<select id="saleOffer"><option>OPCIÓN / DIRECTA</option><option>COMBO PRO</option><option>VIP FULL</option><option>UPSELL PERSONALIZADO</option><option>PERSONALIZADA</option></select></label>
-              <label>Monto pagado (S/)<input id="saleAmount" type="number" min="0" step="0.10" required /></label>
-              <label>Precio original (S/)<input id="saleOriginal" type="number" min="0" step="0.10" /></label>
-              <label>Seguimiento<select id="saleFollowup"><option>Directo</option><option>Seguimiento 1</option><option>Seguimiento 2</option><option>Seguimiento 3</option><option>Seguimiento</option></select></label>
-              <label class="span-2">Nota opcional<textarea id="saleNotes" rows="3" placeholder="Ej.: negoció VIP a S/25"></textarea></label>
-              <div class="span-2 form-actions"><button type="submit" class="btn primary">Guardar venta</button><button type="button" id="resetSale" class="btn ghost">Limpiar</button></div>
+            <form id="saleForm" class="quick-sale-form">
+              <div class="quick-sale-core">
+                <label>Campaña de origen<select id="saleCampaign" required></select></label>
+                <label>Oferta final<select id="saleOffer">
+                  <option>OPCIÓN / DIRECTA</option>
+                  <option>COMBO PRO</option>
+                  <option>VIP FULL</option>
+                  <option>UPSELL PERSONALIZADO</option>
+                  <option>PERSONALIZADA</option>
+                </select></label>
+                <label>¿Fue upsell?<select id="saleUpsell"><option value="false">No</option><option value="true">Sí</option></select></label>
+                <label>Monto pagado (S/)<input id="saleAmount" type="number" min="0" step="0.10" required /></label>
+                <label>Seguimiento<select id="saleFollowup"><option>Directo</option><option>Seguimiento 1</option><option>Seguimiento 2</option><option>Seguimiento 3</option><option>Seguimiento</option></select></label>
+              </div>
+
+              <div class="quick-offers">
+                <button type="button" data-quick-offer="OPCIÓN / DIRECTA">Opción 1</button>
+                <button type="button" data-quick-offer="COMBO PRO">Combo S/15.90</button>
+                <button type="button" data-quick-offer="VIP FULL">VIP S/29.90</button>
+                <button type="button" data-quick-offer="UPSELL PERSONALIZADO">Upsell negociado</button>
+              </div>
+
+              <details class="advanced-sale">
+                <summary>Más detalles (opcional)</summary>
+                <div class="form-grid advanced-grid">
+                  <label>Fecha<input id="saleDate" type="date" required /></label>
+                  <label>Hora<input id="saleTime" type="time" /></label>
+                  <label>Producto / entrada<select id="saleProduct"></select></label>
+                  <label>Precio original (S/)<input id="saleOriginal" type="number" min="0" step="0.10" /></label>
+                  <label class="span-2">Nota opcional<textarea id="saleNotes" rows="3" placeholder="Ej.: negoció VIP a S/25"></textarea></label>
+                </div>
+              </details>
+
+              <div class="form-actions quick-actions">
+                <button type="submit" class="btn primary save-sale-btn">Guardar venta</button>
+                <button type="button" id="resetSale" class="btn ghost">Limpiar</button>
+                <span class="speed-hint">Fecha y hora se llenan solas. El panel recuerda tu última campaña.</span>
+              </div>
             </form>
           </article>
           <aside class="card helper-card">
@@ -171,6 +206,11 @@
               <label>Meta de facturación (S/)<input id="projGoal" type="number" min="0" step="100" /></label>
             </div>
             <div class="preset-row"><button data-budget="50">S/50</button><button data-budget="70">S/70</button><button data-budget="100">S/100</button><button data-budget="140">S/140</button><button data-budget="200">S/200</button></div>
+            <div class="projection-scenarios">
+              <div><span>Conservador</span><strong id="projConservative">S/0</strong><small>ROAS -15%</small></div>
+              <div class="featured"><span>Base</span><strong id="projBaseRevenue">S/0</strong><small>ROAS actual</small></div>
+              <div><span>Fuerte</span><strong id="projOptimistic">S/0</strong><small>ROAS +15%</small></div>
+            </div>
           </article>
           <article class="card projection-result">
             <div class="projection-big"><span>Facturación mensual estimada</span><strong id="projRevenue">S/0</strong></div>
@@ -185,6 +225,16 @@
             <small>Proyección matemática; al escalar, ROAS y costo por conversación pueden cambiar.</small>
           </article>
         </div>
+
+        <article class="card scale-roadmap-card">
+          <div class="card-head"><div><h3>Ruta hacia la meta</h3><p>Aumentos graduales. Solo avanzas si el bloque anterior mantiene rentabilidad.</p></div></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Fecha orientativa</th><th>Presupuesto/día</th><th>Facturación/mes</th><th>Resultado/mes</th><th>Condición</th></tr></thead>
+              <tbody id="scaleRoadmap"></tbody>
+            </table>
+          </div>
+        </article>
       </section>
 
       <section id="view-settings" class="view">
