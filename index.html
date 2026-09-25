@@ -7,11 +7,11 @@
   <title>Mente & Manos — Panel</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260925-3" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="historical-data.js"></script>
+  <script src="config.js?v=20260925-3"></script>
+  <script src="historical-data.js?v=20260925-3"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -81,7 +81,7 @@
         <div id="dailyPulse" class="daily-pulse"></div>
 
         <article id="alertsCard" class="card alerts-card">
-          <div class="card-head"><div><h3>Alertas de campañas</h3><p>Detecta campañas con ROAS bajo durante varios días seguidos.</p></div></div>
+          <div class="card-head"><div><h3>Alertas de campañas · últimos 3 días con gasto</h3><p>Este bloque es independiente del filtro Hoy/Ayer porque busca deterioro sostenido.</p></div><span class="context-badge">3 días</span></div>
           <div id="campaignAlerts" class="alerts-list"></div>
         </article>
 
@@ -91,7 +91,7 @@
             <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
           </article>
           <article class="card goal-card">
-            <div class="card-head"><div><h3>Meta mensual</h3><p id="goalMonthLabel"></p></div></div>
+            <div class="card-head"><div><h3>Meta mensual · mes actual</h3><p id="goalMonthLabel"></p></div><span class="context-badge">Mensual</span></div>
             <div class="goal-amount"><span id="goalRevenue">S/0</span><small id="goalTarget">de S/10,000</small></div>
             <div class="progress"><div id="goalBar"></div></div>
             <div class="goal-meta"><span id="goalPct">0%</span><span id="goalRemaining">Faltan S/0</span></div>
@@ -271,6 +271,6 @@
     </main>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260925-3"></script>
 </body>
 </html>
