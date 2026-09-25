@@ -10,7 +10,7 @@ Panel web para reemplazar el uso diario de `MyM.xlsx`.
 - Estadísticas por campaña y por día.
 - Proyección al subir presupuesto publicitario.
 - Meta mensual de S/10,000 configurable.
-- Importación del historial de `MyM.xlsx` (276 ventas y 123 filas campaña/día incluidas en el paquete).
+- Importación privada del historial de `MyM.xlsx` mediante un archivo JSON local; los datos reales no se publican en GitHub.
 - Modo local inmediato y soporte Supabase para sincronización entre dispositivos.
 - PWA: al publicarlo puedes agregarlo a la pantalla de inicio del celular.
 
@@ -68,19 +68,16 @@ El campo `Upsell` es independiente del monto. Puede ser S/29.90, S/25, S/15.90 u
 
 ## Importación histórica
 
-El archivo `historical-data.js` contiene los datos extraídos de `MyM.xlsx` hasta el 24-sep-2026.
+Por privacidad, el repositorio público **no contiene las ventas ni las estadísticas reales**.
 
-El Excel antiguo no guardaba por separado, en todos los casos, `Opción 1 / Combo / VIP`. Por eso la migración conserva lo que sí sabemos:
+El historial inicial se entrega por separado como archivo JSON privado. En la web:
 
-- fecha y hora;
-- producto/campaña registrada;
-- Upsell Sí/No;
-- precio original cuando existe;
-- monto vendido real;
-- seguimiento Sí/No;
-- descuento.
+1. Conecta Supabase e inicia sesión.
+2. Ve a **Configuración > Importar copia**.
+3. Selecciona el archivo privado de migración.
+4. La aplicación subirá las ventas y la publicidad a tu propia cuenta de Supabase.
 
-Solo se etiqueta `VIP FULL` automáticamente cuando el registro histórico está marcado como upsell y el monto fue exactamente S/29.90. Otros upsells negociados quedan como `UPSELL PERSONALIZADO`, sin inventar información.
+Así el código puede permanecer público para usar GitHub Pages gratis, mientras tus datos siguen protegidos por autenticación y RLS.
 
 ## Archivos
 
@@ -88,6 +85,6 @@ Solo se etiqueta `VIP FULL` automáticamente cuando el registro histórico está
 - `styles.css` — diseño responsive.
 - `app.js` — cálculos, formularios, dashboard y almacenamiento.
 - `config.js` — conexión Supabase.
-- `historical-data.js` — historial migrado.
+- `historical-data.js` — inicializador vacío; no contiene datos privados.
 - `supabase_schema.sql` — tablas + seguridad RLS.
 - `manifest.json`, `sw.js`, `icon.svg` — instalación tipo app/PWA.
