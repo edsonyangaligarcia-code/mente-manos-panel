@@ -46,6 +46,8 @@
   function latestDataDate(){ const dates=[...state.sales.map(x=>x.sale_date),...state.ads.map(x=>x.ad_date)].filter(Boolean).sort(); return dates.at(-1) || isoToday(); }
   function cloudConfigured(){ const c=window.MYM_CONFIG||{}; return Boolean(c.supabaseUrl && c.supabaseAnonKey && c.storageMode!=='local'); }
   function realMultiplier(){ return 1 + num(state.settings.ad_surcharge_pct)/100; }
+  function activeCampaigns(){ return state.settings.active_campaigns||DEFAULT_SETTINGS.active_campaigns; }
+  function isActiveCampaign(campaign){ return activeCampaigns().includes(campaign); }
 
   function seedSales(){
     return (window.MYM_SEED?.sales||[]).map(s=>({
@@ -207,8 +209,15 @@
   function groupCampaign(sales,ads){
     const map={};
     const ensure=(c)=>map[c] ||= {campaign:c,revenue:0,buyers:0,adSpend:0,conversations:0,upsells:0};
-    for(const s of sales){ const x=ensure(s.campaign||'Sin origen'); x.revenue+=num(s.amount); x.buyers++; if(s.upsell)x.upsells++; }
-    for(const a of ads){ const x=ensure(a.campaign||'Sin origen'); x.adSpend+=num(a.ad_spend); x.conversations+=num(a.conversations); }
+    for(const campaign of activeCampaigns()) ensure(campaign);
+    for(const s of sales){
+      if(!isActiveCampaign(s.campaign)) continue;
+      const x=ensure(s.campaign); x.revenue+=num(s.amount); x.buyers++; if(s.upsell)x.upsells++;
+    }
+    for(const a of ads){
+      if(!isActiveCampaign(a.campaign)) continue;
+      const x=ensure(a.campaign); x.adSpend+=num(a.ad_spend); x.conversations+=num(a.conversations);
+    }
     return Object.values(map).map(x=>{
       x.realAds=x.adSpend*realMultiplier(); x.profit=x.revenue-x.realAds; x.roas=x.adSpend?x.revenue/x.adSpend:0; x.conversion=x.conversations?x.buyers/x.conversations:0; x.rpc=x.conversations?x.revenue/x.conversations:0; x.cpc=x.conversations?x.adSpend/x.conversations:0; return x;
     }).sort((a,b)=>b.profit-a.profit);
@@ -262,12 +271,13 @@
   }
 
   function campaignDailyRows(campaign){
+    if(!isActiveCampaign(campaign)) return [];
     const sales=state.sales.filter(s=>s.campaign===campaign), ads=state.ads.filter(a=>a.campaign===campaign && num(a.ad_spend)>0);
     return groupDaily(sales,ads).filter(x=>x.adSpend>0);
   }
 
   function renderCampaignAlerts(){
-    const campaigns=state.settings.active_campaigns||[];
+    const campaigns=activeCampaigns();
     const lowThreshold=Math.max(1.5, realMultiplier()+0.2);
     const watchThreshold=Math.max(2.0, realMultiplier()+0.65);
     const rows=campaigns.map(campaign=>{
@@ -405,16 +415,21 @@
 
   function renderStats(){
     const from=$('statsFrom').value, to=$('statsTo').value, campaign=$('statsCampaign').value||'all'; if(!from||!to)return;
-    const {sales,ads}=filterData('all',campaign,{start:from,end:to}), m=metrics(sales,ads), camps=groupCampaign(sales,ads), days=groupDaily(sales,ads).reverse();
+    let {sales,ads}=filterData('all',campaign,{start:from,end:to});
+    if(campaign==='all'){
+      sales=sales.filter(s=>isActiveCampaign(s.campaign));
+      ads=ads.filter(a=>isActiveCampaign(a.campaign));
+    }
+    const m=metrics(sales,ads), camps=groupCampaign(sales,ads), days=groupDaily(sales,ads).reverse();
     $('statsKpis').innerHTML=[kpi('Facturación',money(m.revenue)),kpi('Resultado',money(m.profit)),kpi('Compradores',INT.format(m.buyers)),kpi('Conversión',pct(m.conversion)),kpi('ROAS',DEC.format(m.roas)),kpi('S/ por chat',money(m.rpc))].join('');
     $('campaignTable').innerHTML=camps.map(x=>`<tr><td><strong>${escapeHtml(x.campaign)}</strong></td><td>${INT.format(x.conversations)}</td><td>${INT.format(x.buyers)}</td><td>${pct(x.conversion)}</td><td>${money(x.revenue)}</td><td>${money(x.rpc)}</td><td>${money(x.adSpend)}</td><td>${x.adSpend?DEC.format(x.roas):'—'}</td><td>${money(x.profit)}</td></tr>`).join('')||'<tr><td colspan="9">Sin datos.</td></tr>';
     $('dailyTable').innerHTML=days.slice(0,45).map(x=>`<tr><td>${humanDate(x.date)}</td><td>${INT.format(x.conversations)}</td><td>${INT.format(x.buyers)}</td><td>${money(x.revenue)}</td><td>${money(x.realAds)}</td><td>${money(x.profit)}</td><td>${x.adSpend?DEC.format(x.roas):'—'}</td></tr>`).join('');
   }
 
   function populateCampaigns(){
-    const campaigns=state.settings.active_campaigns||[];
+    const campaigns=activeCampaigns();
     $('saleCampaign').innerHTML=campaigns.map(c=>`<option>${escapeHtml(c)}</option>`).join('')+'<option>Otro</option>';
-    $('statsCampaign').innerHTML='<option value="all">Todas</option>'+[...new Set([...campaigns,...state.ads.map(a=>a.campaign),...state.sales.map(s=>s.campaign)])].filter(Boolean).sort().map(c=>`<option>${escapeHtml(c)}</option>`).join('');
+    $('statsCampaign').innerHTML='<option value="all">Todas las activas</option>'+campaigns.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
     $('saleProduct').innerHTML=PRODUCTS.map(p=>`<option>${p}</option>`).join('');
     $('adsRows').innerHTML=campaigns.map(c=>`<tr data-campaign="${escapeHtml(c)}"><td><strong>${escapeHtml(c)}</strong></td><td><input class="ad-conv" type="number" min="0" step="1" value="0"></td><td><input class="ad-spend" type="number" min="0" step="0.01" value="0"></td><td class="ads-real">${money(0)}</td></tr>`).join('');
   }
