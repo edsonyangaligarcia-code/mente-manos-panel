@@ -1,14 +1,14 @@
-const CACHE='mym-panel-v11-symbol';
+const CACHE='mym-panel-v12-symbol';
 const ASSETS=[
   './',
   './index.html',
-  './styles.css?v=20260926-3',
-  './app.js?v=20260926-3',
-  './config.js?v=20260926-3',
-  './historical-data.js?v=20260926-3',
+  './styles.css?v=20260926-4',
+  './app.js?v=20260926-4',
+  './config.js?v=20260926-4',
+  './historical-data.js?v=20260926-4',
   './manifest.json',
-  './brand-logo.png?v=20260926-3',
-  './brand-cover.png?v=20260926-3'
+  './brand-logo.png?v=20260926-4',
+  './brand-cover.png?v=20260926-4'
 ];
 
 self.addEventListener('install', event => {
