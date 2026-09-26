@@ -57,3 +57,68 @@
 @media(max-width:470px){.quick-sale-core{grid-template-columns:1fr}.daily-pulse{grid-template-columns:1fr 1fr}}
 
 .context-badge{font-size:9px;font-weight:800;color:#4b5563;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:5px 8px;white-space:nowrap}
+
+/* v5 — edición de ventas + legibilidad */
+.day-sales-card{margin-top:18px}
+.day-sales-head{align-items:center}
+.day-sales-tools{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.day-sales-tools label{display:grid;gap:6px;font-size:12px;font-weight:800;color:#4b5563}
+.day-sales-tools input{border:1px solid #dfe3e8;border-radius:11px;padding:9px 11px;background:#fff;color:#111827}
+.day-sales-summary{min-width:120px;background:#f8fafc;border:1px solid #edf0f3;border-radius:13px;padding:8px 12px;text-align:right}
+.day-sales-summary span{display:block;font-size:11px;color:#6b7280}
+.day-sales-summary strong{display:block;font-size:18px;margin-top:2px}
+.editing-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px 14px;margin:0 0 14px}
+.editing-banner strong{display:block;font-size:13px;color:#9a3412}
+.editing-banner span{display:block;font-size:12px;color:#7c2d12;margin-top:2px}
+.row-actions{display:flex;gap:6px}
+.table-action{border:0;border-radius:9px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer}
+.table-action.edit{background:#eef2ff;color:#3730a3}
+.table-action.delete{background:#fff1f2;color:#be123c}
+.sale-type{display:inline-flex;border-radius:999px;padding:4px 7px;font-size:11px;font-weight:800}
+.sale-type.upsell{background:#ecfdf3;color:#15803d}
+.sale-type.direct{background:#f3f4f6;color:#4b5563}
+.empty-row{text-align:center!important;color:#9ca3af!important;padding:22px!important}
+.sales-day-table{min-width:760px}
+
+/* Legibilidad general */
+body{font-size:15px}
+.topbar p,.card p{font-size:13px}
+.segmented button,.btn.compact,.date-pill,.storage-badge{font-size:13px}
+.kpi .label{font-size:12px}
+.kpi .sub{font-size:12px}
+.goal-meta{font-size:12px}
+.projection-box span{font-size:12px}
+.projection-box small{font-size:11px}
+.campaign-item .metric span{font-size:11px}
+.campaign-item .metric strong{font-size:14px}
+.insight strong{font-size:13px}
+.insight span{font-size:12.5px}
+.form-grid label,.ads-date label,.filter-row label,.quick-sale-core label,.advanced-grid label{font-size:12px}
+.preview-row{font-size:13px}
+.data-table th{font-size:11px}
+.data-table td{font-size:13px}
+.preset-row button,.quick-offers button{font-size:12px}
+.projection-big span{font-size:12px}
+.projection-grid span{font-size:11px}
+.projection-result>small{font-size:11px}
+.cloud-help{font-size:12px}
+.auth-card p{font-size:13px}
+.auth-card label{font-size:12px}
+.pulse-item span{font-size:11px}
+.pulse-item small{font-size:11px}
+.alert-row strong{font-size:13px}
+.alert-row p{font-size:12px}
+.alert-badge{font-size:11px}
+.advanced-sale summary{font-size:12px}
+.speed-hint{font-size:11px}
+.projection-scenarios span,.projection-scenarios small{font-size:11px}
+.context-badge{font-size:10.5px}
+
+@media(max-width:760px){
+  .day-sales-head{align-items:flex-start;flex-direction:column}
+  .day-sales-tools{width:100%}
+  .day-sales-tools label{flex:1}
+  .day-sales-tools input{width:100%}
+  .day-sales-summary{flex:1}
+  .editing-banner{align-items:flex-start;flex-direction:column}
+}
