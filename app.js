@@ -307,12 +307,13 @@
     const prevData=filterData('all','all',prevBounds);
     const previous=metrics(prevData.sales,prevData.ads);
     $('comparisonLabel').textContent=`${humanDate(prevBounds.start)} – ${humanDate(prevBounds.end)}`;
+    const currentHasAds=current.adSpend>0, previousHasAds=previous.adSpend>0;
     const items=[
       ['Facturación',money(current.revenue),money(previous.revenue),deltaBadge(current.revenue,previous.revenue)],
-      ['Resultado real',money(current.profit),money(previous.profit),deltaBadge(current.profit,previous.profit)],
+      ['Resultado real',currentHasAds?money(current.profit):'—',previousHasAds?money(previous.profit):'—',currentHasAds&&previousHasAds?deltaBadge(current.profit,previous.profit):'<span class="comparison-delta neutral">pendiente</span>'],
       ['Compradores',INT.format(current.buyers),INT.format(previous.buyers),deltaBadge(current.buyers,previous.buyers)],
       ['S/ por chat',current.conversations?money(current.rpc):'—',previous.conversations?money(previous.rpc):'—',current.conversations&&previous.conversations?deltaBadge(current.rpc,previous.rpc):'<span class="comparison-delta neutral">—</span>'],
-      ['ROAS',current.adSpend?DEC.format(current.roas):'—',previous.adSpend?DEC.format(previous.roas):'—',current.adSpend&&previous.adSpend?deltaBadge(current.roas,previous.roas):'<span class="comparison-delta neutral">—</span>']
+      ['ROAS',currentHasAds?DEC.format(current.roas):'—',previousHasAds?DEC.format(previous.roas):'—',currentHasAds&&previousHasAds?deltaBadge(current.roas,previous.roas):'<span class="comparison-delta neutral">—</span>']
     ];
     el.innerHTML=items.map(([label,now,before,delta])=>`
       <div class="comparison-item">
@@ -338,15 +339,16 @@
   function renderCampaignProfitChart(rows){
     if(!window.Chart || !$('campaignProfitChart')) return;
     state.charts.campaignProfit?.destroy();
+    const hasAnySpend=rows.some(x=>x.adSpend>0);
     const sorted=[...rows].sort((a,b)=>b.profit-a.profit).slice(0,8);
     state.charts.campaignProfit=new Chart($('campaignProfitChart'),{
       type:'bar',
       data:{labels:sorted.map(x=>x.campaign),datasets:[{
-        label:'Resultado real',data:sorted.map(x=>x.profit),
+        label:'Resultado real',data:sorted.map(x=>hasAnySpend?x.profit:0),
         backgroundColor:sorted.map(x=>x.profit>=0?'rgba(34,197,94,.72)':'rgba(239,68,68,.72)'),
         borderRadius:7
       }]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Resultado: ${money(c.raw)}`}}},scales:{x:{grid:{color:'#eef0f3'},ticks:{font:{size:10},callback:v=>`S/${v}`}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>hasAnySpend?`Resultado: ${money(c.raw)}`:'Faltan datos de Ads en este rango'}}},scales:{x:{grid:{color:'#eef0f3'},ticks:{font:{size:10},callback:v=>`S/${v}`}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
     });
   }
 
