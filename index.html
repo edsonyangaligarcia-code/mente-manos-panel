@@ -3,38 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#042b63" />
   <title>Mente & Manos — Panel</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260925-8" />
+  <link rel="icon" type="image/png" href="brand-logo.png?v=20260926-1" />
+  <link rel="stylesheet" href="styles.css?v=20260926-1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260925-8"></script>
-  <script src="historical-data.js?v=20260925-8"></script>
+  <script src="config.js?v=20260926-1"></script>
+  <script src="historical-data.js?v=20260926-1"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <div id="authOverlay" class="auth-overlay hidden">
-    <div class="auth-card">
-      <div class="brand-mark">M&M</div>
-      <h1>Tu panel en la nube</h1>
-      <p>Inicia sesión para sincronizar ventas y publicidad entre tus dispositivos.</p>
-      <label>Email<input id="authEmail" type="email" placeholder="tu@email.com" autocomplete="email" /></label>
-      <label>Contraseña<input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" /></label>
-      <button id="btnLogin" class="btn primary wide">Ingresar</button>
-      <button id="btnSignup" class="btn ghost wide">Crear cuenta</button>\n      <button id="btnResendConfirm" class="link-btn">Reenviar correo de confirmación</button>
-      <button id="btnUseLocal" class="link-btn">Usar modo local por ahora</button>
-      <small id="authMessage"></small>
+    <div class="auth-panel">
+      <div class="auth-visual">
+        <img src="brand-cover.png?v=20260926-1" alt="Mente & Manos" class="auth-cover" />
+        <div class="auth-visual-badge">Panel de control</div>
+      </div>
+      <div class="auth-card">
+        <img src="brand-logo.png?v=20260926-1" alt="Mente & Manos" class="brand-auth-logo" />
+        <h1>Bienvenido</h1>
+        <p>Ventas, publicidad, rentabilidad y proyecciones de Mente & Manos en un solo lugar.</p>
+        <label>Email<input id="authEmail" type="email" placeholder="tu@email.com" autocomplete="email" /></label>
+        <label>Contraseña<input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" /></label>
+        <button id="btnLogin" class="btn primary wide">Ingresar</button>
+        <button id="btnSignup" class="btn ghost wide">Crear cuenta</button>
+        <button id="btnResendConfirm" class="link-btn">Reenviar correo de confirmación</button>
+        <button id="btnUseLocal" class="link-btn">Usar modo local por ahora</button>
+        <small id="authMessage"></small>
+      </div>
     </div>
   </div>
 
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">M&M</div>
-        <div><strong>Mente & Manos</strong><span>Panel de control</span></div>
+        <img src="brand-logo.png?v=20260926-1" alt="Mente & Manos" class="brand-logo" />
+        <div class="brand-copy"><strong>Mente &amp; Manos</strong><span>Capacitación Integral</span></div>
       </div>
       <nav id="nav">
         <button class="nav-item active" data-view="dashboard"><span>⌂</span> Dashboard</button>
@@ -45,6 +52,7 @@
         <button class="nav-item" data-view="settings"><span>⚙</span> Configuración</button>
       </nav>
       <div class="sidebar-footer">
+        <div class="sidebar-quote">Donde la <strong>mente</strong> diseña y las <strong>manos</strong> crean.</div>
         <div id="storageBadge" class="storage-badge">Modo local</div>
         <button id="btnInstall" class="install-btn hidden">Instalar app</button>
       </div>
@@ -64,6 +72,15 @@
       </header>
 
       <section id="view-dashboard" class="view active">
+        <article class="brand-hero">
+          <img src="brand-cover.png?v=20260926-1" alt="Mente & Manos" class="brand-hero-image" />
+          <div class="brand-hero-shade"></div>
+          <div class="brand-hero-badge">
+            <span>Panel Mente &amp; Manos</span>
+            <strong>Ventas • Ads • Rentabilidad</strong>
+          </div>
+        </article>
+
         <div class="toolbar">
           <div class="segmented" id="rangeSelector">
             <button data-range="today">Hoy</button>
@@ -319,6 +336,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260925-8"></script>
+  <script src="app.js?v=20260926-1"></script>
 </body>
 </html>
