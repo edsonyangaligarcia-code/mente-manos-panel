@@ -7,11 +7,11 @@
   <title>Mente & Manos — Panel</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260925-7" />
+  <link rel="stylesheet" href="styles.css?v=20260925-8" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260925-7"></script>
-  <script src="historical-data.js?v=20260925-7"></script>
+  <script src="config.js?v=20260925-8"></script>
+  <script src="historical-data.js?v=20260925-8"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -101,7 +101,7 @@
 
         <div class="grid-2">
           <article class="card">
-            <div class="card-head"><div><h3>Campañas</h3><p>Qué puerta de entrada está produciendo dinero.</p></div></div>
+            <div class="card-head"><div><h3>Campañas activas</h3><p>Solo ING 1, ING 3/4 e ING 7, incluyendo los upsells originados por ellas.</p></div><span class="context-badge">Activas</span></div>
             <div id="campaignCards" class="campaign-list"></div>
           </article>
           <article class="card chart-card">
@@ -122,7 +122,7 @@
           </article>
 
           <article class="card chart-card">
-            <div class="card-head"><div><h3>Resultado real por campaña</h3><p>Facturación menos Ads incluyendo el recargo del 18%.</p></div></div>
+            <div class="card-head"><div><h3>Resultado real por campaña activa</h3><p>Solo campañas activas. Los upsells se atribuyen a la campaña que originó el lead.</p></div></div>
             <div class="chart-wrap medium"><canvas id="campaignProfitChart"></canvas></div>
           </article>
 
@@ -234,7 +234,7 @@
         </div>
         <div class="kpi-grid compact-grid" id="statsKpis"></div>
         <article class="card">
-          <div class="card-head"><div><h3>Rendimiento por campaña</h3><p>Ingreso atribuido al origen del lead.</p></div></div>
+          <div class="card-head"><div><h3>Rendimiento por campañas activas</h3><p>Ingreso y upsells atribuidos al origen del lead.</p></div><span class="context-badge">Activas</span></div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>Campaña</th><th>Chats</th><th>Compradores</th><th>Conversión</th><th>Facturación</th><th>S/chat</th><th>Ads</th><th>ROAS</th><th>Resultado real</th></tr></thead><tbody id="campaignTable"></tbody></table></div>
         </article>
         <article class="card">
@@ -319,6 +319,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260925-7"></script>
+  <script src="app.js?v=20260925-8"></script>
 </body>
 </html>
