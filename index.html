@@ -7,11 +7,11 @@
   <title>Mente & Manos — Panel</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260925-5" />
+  <link rel="stylesheet" href="styles.css?v=20260925-6" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260925-5"></script>
-  <script src="historical-data.js?v=20260925-5"></script>
+  <script src="config.js?v=20260925-6"></script>
+  <script src="historical-data.js?v=20260925-6"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -107,6 +107,28 @@
           <article class="card chart-card">
             <div class="card-head"><div><h3>Mezcla de ventas</h3><p>Directas, Combo, VIP y upsells personalizados.</p></div></div>
             <div class="chart-wrap small"><canvas id="offerChart"></canvas></div>
+          </article>
+        </div>
+
+        <article class="card comparison-card">
+          <div class="card-head"><div><h3>Comparación con el período anterior</h3><p>Mismo número de días inmediatamente anteriores al rango seleccionado.</p></div><span class="context-badge" id="comparisonLabel">vs anterior</span></div>
+          <div id="periodComparison" class="comparison-grid"></div>
+        </article>
+
+        <div class="analytics-grid">
+          <article class="card chart-card">
+            <div class="card-head"><div><h3>Valor de cada conversación</h3><p>Cuánto dinero genera, en promedio, cada chat por día.</p></div></div>
+            <div class="chart-wrap medium"><canvas id="rpcTrendChart"></canvas></div>
+          </article>
+
+          <article class="card chart-card">
+            <div class="card-head"><div><h3>Resultado real por campaña</h3><p>Facturación menos Ads incluyendo el recargo del 18%.</p></div></div>
+            <div class="chart-wrap medium"><canvas id="campaignProfitChart"></canvas></div>
+          </article>
+
+          <article class="card chart-card">
+            <div class="card-head"><div><h3>Facturación por horario</h3><p>En qué franjas de 2 horas estás cerrando más dinero.</p></div></div>
+            <div class="chart-wrap medium"><canvas id="hourlyRevenueChart"></canvas></div>
           </article>
         </div>
 
@@ -297,6 +319,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260925-5"></script>
+  <script src="app.js?v=20260925-6"></script>
 </body>
 </html>
