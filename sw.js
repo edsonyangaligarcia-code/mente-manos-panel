@@ -1,11 +1,11 @@
-const CACHE='mym-panel-v7';
+const CACHE='mym-panel-v8';
 const ASSETS=[
   './',
   './index.html',
-  './styles.css?v=20260925-7',
-  './app.js?v=20260925-7',
-  './config.js?v=20260925-7',
-  './historical-data.js?v=20260925-7',
+  './styles.css?v=20260925-8',
+  './app.js?v=20260925-8',
+  './config.js?v=20260925-8',
+  './historical-data.js?v=20260925-8',
   './manifest.json',
   './icon.svg'
 ];
