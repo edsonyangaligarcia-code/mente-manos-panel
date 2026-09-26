@@ -345,7 +345,6 @@
     $('saleOffer').value='OPCIÓN / DIRECTA';
     $('saleUpsell').value='false';
     $('saleFollowup').value='Directo';
-    $('.save-sale-btn');
     const saveBtn=document.querySelector('.save-sale-btn'); if(saveBtn) saveBtn.textContent='Guardar venta';
     $('editingBanner')?.classList.add('hidden');
     autoPrice();
@@ -385,10 +384,15 @@
     const s=saleById(id); if(!s) return;
     state.editingSaleId=s.id;
     populateCampaigns();
-    if([...$('saleCampaign').options].some(o=>o.value===s.campaign)) $('saleCampaign').value=s.campaign;
-    else $('saleCampaign').value='Otro';
-    if([...$('saleProduct').options].some(o=>o.value===(s.product||s.campaign))) $('saleProduct').value=s.product||s.campaign;
-    else $('saleProduct').value='Otro';
+    if(![...$('saleCampaign').options].some(o=>o.value===s.campaign)){
+      $('saleCampaign').add(new Option(s.campaign,s.campaign));
+    }
+    $('saleCampaign').value=s.campaign;
+    const productValue=s.product||s.campaign;
+    if(![...$('saleProduct').options].some(o=>o.value===productValue)){
+      $('saleProduct').add(new Option(productValue,productValue));
+    }
+    $('saleProduct').value=productValue;
     $('saleDate').value=s.sale_date||isoToday();
     $('saleTime').value=(s.sale_time||'').slice(0,5);
     $('saleUpsell').value=s.upsell?'true':'false';
