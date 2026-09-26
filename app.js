@@ -396,7 +396,11 @@
     $('saleDate').value=s.sale_date||isoToday();
     $('saleTime').value=(s.sale_time||'').slice(0,5);
     $('saleUpsell').value=s.upsell?'true':'false';
-    $('saleOffer').value=s.offer_type||'OPCIÓN / DIRECTA';
+    const offerValue=s.offer_type||'OPCIÓN / DIRECTA';
+    if(![...$('saleOffer').options].some(o=>o.value===offerValue)){
+      $('saleOffer').add(new Option(offerValue,offerValue));
+    }
+    $('saleOffer').value=offerValue;
     $('saleAmount').value=num(s.amount).toFixed(2);
     $('saleOriginal').value=s.original_price==null?'':num(s.original_price).toFixed(2);
     $('saleFollowup').value=s.followup_stage||'Directo';
