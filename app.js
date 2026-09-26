@@ -264,6 +264,18 @@
   }
 
   function renderDailyPulse(){
+    const el=$('dailyPulse');
+    if(!el) return;
+
+    // Monitor operativo exclusivo del día actual.
+    // En otros filtros, los KPI superiores ya representan el rango elegido.
+    if(state.range!=='today'){
+      el.classList.add('hidden');
+      el.innerHTML='';
+      return;
+    }
+    el.classList.remove('hidden');
+
     const today=isoToday(), yesterday=dateAdd(today,-1);
     const tdRaw=filterData('all','all',{start:today,end:today});
     const ydRaw=filterData('all','all',{start:yesterday,end:yesterday});
@@ -318,7 +330,7 @@
       ? `Ads Meta ${money(tm.adSpend)}`
       : 'Hoy se actualiza al guardar Meta';
 
-    $('dailyPulse').innerHTML=[
+    el.innerHTML=[
       `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
       `<div class="pulse-item"><span>${adsLabel}</span><strong>${adsValue}</strong><small>${adsSub}</small></div>`,
       `<div class="pulse-item ${hasTodayMeta?(tm.profit>=0?'good':''):(last&&last.profit>=0?'good':'')}"><span>${profitLabel}</span><strong>${profitValue}</strong><small>${profitSub}</small></div>`,
@@ -374,14 +386,15 @@
     const prevRaw=filterData('all','all',prevBounds);
     const prevData=onlyActiveBusinessData(prevRaw.sales,prevRaw.ads);
     const previous=metrics(prevData.sales,prevData.ads);
-    $('comparisonLabel').textContent=`${humanDate(prevBounds.start)} – ${humanDate(prevBounds.end)}`;
+    $('comparisonLabel').textContent=state.range==='today' ? 'Hoy parcial vs ayer' : `${humanDate(prevBounds.start)} – ${humanDate(prevBounds.end)}`;
     const currentHasAds=current.adSpend>0, previousHasAds=previous.adSpend>0;
+    const todayPartial=state.range==='today' && !currentHasAds;
     const items=[
       ['Facturación',money(current.revenue),money(previous.revenue),deltaBadge(current.revenue,previous.revenue)],
-      ['Resultado real',currentHasAds?money(current.profit):'—',previousHasAds?money(previous.profit):'—',currentHasAds&&previousHasAds?deltaBadge(current.profit,previous.profit):'<span class="comparison-delta neutral">pendiente</span>'],
+      ['Resultado real',currentHasAds?money(current.profit):(todayPartial?'Pendiente':'—'),previousHasAds?money(previous.profit):'—',currentHasAds&&previousHasAds?deltaBadge(current.profit,previous.profit):'<span class="comparison-delta neutral">al cierre</span>'],
       ['Compradores',INT.format(current.buyers),INT.format(previous.buyers),deltaBadge(current.buyers,previous.buyers)],
       ['S/ por chat',current.conversations?money(current.rpc):'—',previous.conversations?money(previous.rpc):'—',current.conversations&&previous.conversations?deltaBadge(current.rpc,previous.rpc):'<span class="comparison-delta neutral">—</span>'],
-      ['ROAS',currentHasAds?DEC.format(current.roas):'—',previousHasAds?DEC.format(previous.roas):'—',currentHasAds&&previousHasAds?deltaBadge(current.roas,previous.roas):'<span class="comparison-delta neutral">—</span>']
+      ['ROAS',currentHasAds?DEC.format(current.roas):(todayPartial?'Pendiente':'—'),previousHasAds?DEC.format(previous.roas):'—',currentHasAds&&previousHasAds?deltaBadge(current.roas,previous.roas):'<span class="comparison-delta neutral">al cierre</span>']
     ];
     el.innerHTML=items.map(([label,now,before,delta])=>`
       <div class="comparison-item">
