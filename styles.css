@@ -525,3 +525,41 @@ body{color:var(--ink)}
     min-width:50px;
   }
 }
+
+
+/* v14 — login liviano / estabilidad */
+.auth-visual-safe{
+  min-height:520px;
+  background:
+    radial-gradient(circle at 28% 22%,rgba(40,112,230,.34),transparent 34%),
+    radial-gradient(circle at 78% 72%,rgba(255,152,0,.22),transparent 31%),
+    linear-gradient(145deg,#031d45 0%,#06336f 58%,#253453 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  padding:34px;
+}
+.auth-safe-mark{
+  width:180px;
+  height:180px;
+  object-fit:cover;
+  border-radius:50%;
+  background:#fff;
+  border:8px solid rgba(255,255,255,.95);
+  box-shadow:0 22px 50px rgba(0,0,0,.28);
+}
+.auth-safe-copy{
+  display:grid;
+  gap:5px;
+  text-align:center;
+  color:#fff;
+}
+.auth-safe-copy strong{font-size:28px;letter-spacing:-.6px}
+.auth-safe-copy span{font-size:13px;color:rgba(255,255,255,.82)}
+@media(max-width:980px){
+  .auth-visual-safe{min-height:220px;padding:22px}
+  .auth-safe-mark{width:110px;height:110px;border-width:5px}
+  .auth-safe-copy strong{font-size:21px}
+}
