@@ -19,7 +19,7 @@
 
   const state = {
     sales: [], ads: [], settings: structuredClone(DEFAULT_SETTINGS),
-    mode: 'local', sb: null, user: null, range: 'month', charts: {}, deferredPrompt: null
+    mode: 'local', sb: null, user: null, range: 'month', charts: {}, deferredPrompt: null, editingSaleId: null
   };
 
   function num(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
@@ -121,6 +121,15 @@
     const row={...s,user_id:state.user.id}; delete row.id;
     const {data,error}=await state.sb.from('sales').insert(row).select().single();
     if(error) throw error; return data;
+  }
+  async function cloudUpdateSale(s){
+    const row={...s}; delete row.id; delete row.user_id; delete row.created_at;
+    const {data,error}=await state.sb.from('sales').update(row).eq('id',s.id).eq('user_id',state.user.id).select().single();
+    if(error) throw error; return data;
+  }
+  async function cloudDeleteSale(id){
+    const {error}=await state.sb.from('sales').delete().eq('id',id).eq('user_id',state.user.id);
+    if(error) throw error;
   }
   async function cloudUpsertAd(a){
     const row={...a,user_id:state.user.id}; delete row.id;
@@ -326,6 +335,7 @@
   }
   function resetSaleForm(){
     const prefs=lastSalePrefs();
+    state.editingSaleId=null;
     $('saleForm').reset();
     $('saleDate').value=isoToday();
     $('saleTime').value=new Date().toTimeString().slice(0,5);
@@ -335,21 +345,126 @@
     $('saleOffer').value='OPCIÓN / DIRECTA';
     $('saleUpsell').value='false';
     $('saleFollowup').value='Directo';
+    $('.save-sale-btn');
+    const saveBtn=document.querySelector('.save-sale-btn'); if(saveBtn) saveBtn.textContent='Guardar venta';
+    $('editingBanner')?.classList.add('hidden');
     autoPrice();
     syncQuickOfferButtons();
     updateSalePreview();
   }
 
+  function saleById(id){ return state.sales.find(s=>String(s.id)===String(id)); }
+
+  function renderDaySales(){
+    const date=$('daySalesDate')?.value || isoToday();
+    const rows=state.sales
+      .filter(s=>s.sale_date===date)
+      .sort((a,b)=>(b.sale_time||'').localeCompare(a.sale_time||''));
+    const total=rows.reduce((a,s)=>a+num(s.amount),0);
+    if($('daySalesCount')) $('daySalesCount').textContent=`${rows.length} ${rows.length===1?'venta':'ventas'}`;
+    if($('daySalesTotal')) $('daySalesTotal').textContent=money(total);
+    if(!$('daySalesRows')) return;
+    $('daySalesRows').innerHTML=rows.length ? rows.map(s=>`
+      <tr>
+        <td>${escapeHtml(s.sale_time||'—')}</td>
+        <td><strong>${escapeHtml(s.campaign||'—')}</strong></td>
+        <td>${escapeHtml(s.offer_type||'—')}</td>
+        <td>${s.upsell?'<span class="sale-type upsell">Upsell</span>':'<span class="sale-type direct">Directa</span>'}</td>
+        <td>${escapeHtml(s.followup_stage||'Directo')}</td>
+        <td><strong>${money(s.amount)}</strong></td>
+        <td>
+          <div class="row-actions">
+            <button type="button" class="table-action edit" data-edit-sale="${escapeHtml(s.id)}">Editar</button>
+            <button type="button" class="table-action delete" data-delete-sale="${escapeHtml(s.id)}">Eliminar</button>
+          </div>
+        </td>
+      </tr>`).join('') : '<tr><td colspan="7" class="empty-row">No hay ventas registradas en esta fecha.</td></tr>';
+  }
+
+  function loadSaleIntoForm(id){
+    const s=saleById(id); if(!s) return;
+    state.editingSaleId=s.id;
+    populateCampaigns();
+    if([...$('saleCampaign').options].some(o=>o.value===s.campaign)) $('saleCampaign').value=s.campaign;
+    else $('saleCampaign').value='Otro';
+    if([...$('saleProduct').options].some(o=>o.value===(s.product||s.campaign))) $('saleProduct').value=s.product||s.campaign;
+    else $('saleProduct').value='Otro';
+    $('saleDate').value=s.sale_date||isoToday();
+    $('saleTime').value=(s.sale_time||'').slice(0,5);
+    $('saleUpsell').value=s.upsell?'true':'false';
+    $('saleOffer').value=s.offer_type||'OPCIÓN / DIRECTA';
+    $('saleAmount').value=num(s.amount).toFixed(2);
+    $('saleOriginal').value=s.original_price==null?'':num(s.original_price).toFixed(2);
+    $('saleFollowup').value=s.followup_stage||'Directo';
+    $('saleNotes').value=s.notes||'';
+    syncQuickOfferButtons();
+    updateSalePreview();
+    const saveBtn=document.querySelector('.save-sale-btn'); if(saveBtn) saveBtn.textContent='Guardar cambios';
+    if($('editingBanner')){
+      $('editingBanner').classList.remove('hidden');
+      $('editingBannerText').textContent=`${humanDate(s.sale_date)} · ${s.sale_time||'sin hora'} · ${s.campaign} · ${money(s.amount)}`;
+    }
+    $('saleForm').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  async function deleteSale(id){
+    const s=saleById(id); if(!s) return;
+    if(!confirm(`¿Eliminar esta venta de ${money(s.amount)} (${s.campaign})? Esta acción no se puede deshacer.`)) return;
+    try{
+      if(state.mode==='supabase') await cloudDeleteSale(id);
+      state.sales=state.sales.filter(x=>String(x.id)!==String(id));
+      if(state.mode==='local') saveLocal();
+      if(String(state.editingSaleId)===String(id)) resetSaleForm();
+      renderAll();
+      renderDaySales();
+      toast('Venta eliminada.');
+    }catch(err){ console.error(err); toast('No se pudo eliminar la venta.',true); }
+  }
+
   async function saveSale(e){
     e.preventDefault();
-    const s={id:uid(),sale_date:$('saleDate').value,sale_time:$('saleTime').value||null,campaign:$('saleCampaign').value,product:$('saleProduct').value,upsell:$('saleUpsell').value==='true',offer_type:$('saleOffer').value,amount:num($('saleAmount').value),original_price:$('saleOriginal').value?num($('saleOriginal').value):null,followup_stage:$('saleFollowup').value,discount:null,notes:$('saleNotes').value.trim()||null};
-    if(!s.sale_date||!s.campaign||s.amount<=0){toast('Completa fecha, campaña y monto.',true);return;}
+    const base={
+      sale_date:$('saleDate').value,
+      sale_time:$('saleTime').value||null,
+      campaign:$('saleCampaign').value,
+      product:$('saleProduct').value,
+      upsell:$('saleUpsell').value==='true',
+      offer_type:$('saleOffer').value,
+      amount:num($('saleAmount').value),
+      original_price:$('saleOriginal').value?num($('saleOriginal').value):null,
+      followup_stage:$('saleFollowup').value,
+      discount:null,
+      notes:$('saleNotes').value.trim()||null
+    };
+    if(!base.sale_date||!base.campaign||base.amount<=0){toast('Completa fecha, campaña y monto.',true);return;}
     try{
-      if(state.mode==='supabase'){ const saved=await cloudInsertSale(s); state.sales.push(saved); }
-      else{ state.sales.push(s); saveLocal(); }
-      saveLastSalePrefs(s);
-      toast(`Venta guardada: ${money(s.amount)}`); resetSaleForm(); renderAll();
-    }catch(err){console.error(err);toast('No se pudo guardar la venta.',true)}
+      if(state.editingSaleId){
+        const existing=saleById(state.editingSaleId);
+        const updated={...existing,...base,id:state.editingSaleId};
+        if(state.mode==='supabase'){
+          const saved=await cloudUpdateSale(updated);
+          const i=state.sales.findIndex(x=>String(x.id)===String(state.editingSaleId));
+          if(i>=0) state.sales[i]=saved;
+        }else{
+          const i=state.sales.findIndex(x=>String(x.id)===String(state.editingSaleId));
+          if(i>=0) state.sales[i]=updated;
+          saveLocal();
+        }
+        saveLastSalePrefs(updated);
+        toast(`Venta actualizada: ${money(base.amount)}`);
+      }else{
+        const s={id:uid(),...base};
+        if(state.mode==='supabase'){ const saved=await cloudInsertSale(s); state.sales.push(saved); }
+        else{ state.sales.push(s); saveLocal(); }
+        saveLastSalePrefs(s);
+        toast(`Venta guardada: ${money(s.amount)}`);
+      }
+      const keepDate=base.sale_date;
+      resetSaleForm();
+      if($('daySalesDate')) $('daySalesDate').value=keepDate;
+      renderAll();
+      renderDaySales();
+    }catch(err){console.error(err);toast(state.editingSaleId?'No se pudo actualizar la venta.':'No se pudo guardar la venta.',true)}
   }
   function loadAdsForDate(){
     const date=$('adsDate').value;
@@ -424,7 +539,7 @@
   }
 
   function renderAll(){
-    populateCampaigns(); renderSettings(); renderDashboard(); renderStats(); $('projGoal').value=state.settings.monthly_goal; renderProjection(); updateStorageUi();
+    populateCampaigns(); renderSettings(); renderDashboard(); renderStats(); renderDaySales(); $('projGoal').value=state.settings.monthly_goal; renderProjection(); updateStorageUi();
   }
 
   function exportBackup(){
@@ -522,6 +637,13 @@
     ['saleCampaign','saleOffer'].forEach(id=>$(id).addEventListener('change',autoPrice));
     ['saleUpsell','saleAmount'].forEach(id=>$(id).addEventListener('input',updateSalePreview));
     qsa('[data-quick-offer]').forEach(b=>b.addEventListener('click',()=>{$('saleOffer').value=b.dataset.quickOffer;autoPrice();}));
+    $('daySalesDate')?.addEventListener('change',renderDaySales);
+    $('daySalesRows')?.addEventListener('click',e=>{
+      const edit=e.target.closest('[data-edit-sale]'), del=e.target.closest('[data-delete-sale]');
+      if(edit) loadSaleIntoForm(edit.dataset.editSale);
+      if(del) deleteSale(del.dataset.deleteSale);
+    });
+    $('cancelEditSale')?.addEventListener('click',()=>{ resetSaleForm(); renderDaySales(); });
 
     $('adsDate').addEventListener('change',loadAdsForDate); $('adsRows').addEventListener('input',e=>{const tr=e.target.closest('tr');if(tr)updateAdRealRow(tr)}); $('saveAds').addEventListener('click',saveAdsDay);
     $('applyStats').addEventListener('click',renderStats); $('saveSettings').addEventListener('click',saveSettings); $('exportBackup').addEventListener('click',exportBackup); $('importBackup').addEventListener('change',e=>e.target.files[0]&&importBackupFile(e.target.files[0])); $('importHistory')?.addEventListener('click',importHistory);
@@ -534,7 +656,7 @@
   }
 
   async function init(){
-    $('todayLabel').textContent=new Intl.DateTimeFormat('es-PE',{weekday:'short',day:'2-digit',month:'short'}).format(new Date()); $('saleDate').value=isoToday(); $('saleTime').value=new Date().toTimeString().slice(0,5); $('adsDate').value=isoToday(); bind();
+    $('todayLabel').textContent=new Intl.DateTimeFormat('es-PE',{weekday:'short',day:'2-digit',month:'short'}).format(new Date()); $('saleDate').value=isoToday(); $('saleTime').value=new Date().toTimeString().slice(0,5); $('adsDate').value=isoToday(); if($('daySalesDate')) $('daySalesDate').value=isoToday(); bind();
     await initSupabase(); if(state.mode==='local' || state.user){ initStatsDates(); populateCampaigns(); resetSaleForm(); loadAdsForDate(); renderAll(); }
     if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
