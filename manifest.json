@@ -7,6 +7,6 @@
   "theme_color": "#042b63",
   "description": "Panel de ventas, publicidad y rentabilidad de Mente & Manos",
   "icons": [
-    {"src":"brand-mark.png","sizes":"685x670","type":"image/png","purpose":"any maskable"}
+    {"src":"brand-logo.png","sizes":"1254x1254","type":"image/png","purpose":"any"}
   ]
 }
