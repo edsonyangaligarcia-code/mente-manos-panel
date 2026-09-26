@@ -154,3 +154,169 @@ body{font-size:15px}
 @media(max-width:470px){
   .comparison-grid{grid-template-columns:1fr}
 }
+
+
+/* v9 — Branding Mente & Manos */
+:root{
+  --bg:#eef3f9;
+  --card:#ffffff;
+  --ink:#10264f;
+  --muted:#66758f;
+  --line:#dfe7f1;
+  --dark:#042b63;
+  --accent:#ff9800;
+  --accent2:#f27f0c;
+  --blue:#1769e0;
+  --shadow:0 14px 38px rgba(8,39,91,.08);
+}
+html,body{background:linear-gradient(180deg,#f6f8fc 0%,#edf3f9 100%)}
+body{color:var(--ink)}
+.sidebar{
+  background:linear-gradient(180deg,#042b63 0%,#031f49 100%);
+  overflow:hidden;
+  box-shadow:10px 0 32px rgba(3,31,73,.08)
+}
+.sidebar::after{
+  content:"";
+  position:absolute;
+  width:210px;height:210px;
+  left:-42px;bottom:78px;
+  background:url('brand-logo.png?v=20260926-1') center/contain no-repeat;
+  opacity:.055;
+  pointer-events:none
+}
+.brand{align-items:center;padding:2px 8px 26px;position:relative;z-index:1}
+.brand-logo{
+  width:58px;height:58px;object-fit:cover;border-radius:18px;background:#fff;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);flex:0 0 auto
+}
+.brand-copy strong{display:block;color:#fff;font-size:17px;line-height:1.1;letter-spacing:-.2px}
+.brand-copy span{display:block;color:#c8d8f5;font-size:11px;margin-top:5px}
+.nav-item{font-weight:750;border:1px solid transparent;transition:.18s ease}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{
+  background:linear-gradient(135deg,#1255d1 0%,#1676f4 100%);
+  color:#fff;box-shadow:0 10px 24px rgba(0,76,190,.30)
+}
+.sidebar-footer{position:relative;z-index:1}
+.sidebar-quote{
+  padding:13px 12px;border-radius:16px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.11);
+  color:#d7e3f8;font-size:12px;line-height:1.45
+}
+.sidebar-quote strong{color:#ffb13b}
+.storage-badge,.install-btn{
+  background:rgba(255,255,255,.035);
+  border-color:rgba(255,255,255,.13);
+  color:#fff
+}
+.main{background:transparent}
+.topbar h1{color:var(--dark);font-size:27px}
+.topbar p{color:#71819a}
+.date-pill{
+  background:#fff;color:#476283;border-color:#dce5f0;
+  box-shadow:0 6px 18px rgba(8,39,91,.05)
+}
+.btn.primary{
+  background:linear-gradient(135deg,#06306d 0%,#0c61d7 100%);
+  box-shadow:0 7px 18px rgba(6,64,145,.15)
+}
+.btn.primary:hover{background:linear-gradient(135deg,#04285d 0%,#0a55bc 100%)}
+.btn.ghost{border-color:#dbe4ef;color:#324968}
+.card,.kpi{border-color:#e5edf6}
+.card h3{color:#123263}
+.kpi .label{color:#60728d}
+.kpi .value{color:#0c2e68}
+.segmented{background:#e6edf6}
+.segmented button{color:#65758e}
+.segmented button.active{color:#08336f}
+.progress>div{background:linear-gradient(90deg,#ff9800 0%,#f47d0b 100%)}
+.goal-amount span{color:#0d2c62}
+.projection-box{background:linear-gradient(180deg,#f6f9fd 0%,#eff5fb 100%);border-color:#e2ebf5}
+.helper-note{background:#f5f9ff;border-color:#deebfb}
+.cloud-help{background:#f7fbff;border-color:#e2edf8}
+.context-badge{background:#edf4ff;color:#27558d;border-color:#d7e7fb}
+.pulse-item{background:linear-gradient(145deg,#052d66 0%,#0b3f82 100%)}
+.pulse-item.good strong{color:#8df0b1}
+.alert-row.green .alert-icon{background:#ebfbf1}
+.alert-row.amber .alert-icon{background:#fff5e8}
+.table-action.edit{background:#edf4ff;color:#2456a0}
+.sale-type.upsell{background:#fff4e5;color:#b65d00}
+
+/* Hero de marca */
+.brand-hero{
+  position:relative;
+  min-height:200px;
+  margin-bottom:18px;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 18px 45px rgba(6,43,99,.14);
+  background:#062b61
+}
+.brand-hero-image{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center
+}
+.brand-hero-shade{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(3,30,74,.08) 0%,rgba(3,30,74,.02) 55%,rgba(242,126,11,.08) 100%)
+}
+.brand-hero-badge{
+  position:absolute;right:22px;bottom:18px;
+  display:grid;gap:2px;
+  padding:11px 14px;border-radius:14px;
+  background:rgba(2,26,62,.67);
+  color:#fff;border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(8px);
+  box-shadow:0 10px 24px rgba(0,0,0,.18)
+}
+.brand-hero-badge span{font-size:10px;color:#ffc36d;text-transform:uppercase;letter-spacing:.8px;font-weight:900}
+.brand-hero-badge strong{font-size:13px;letter-spacing:.1px}
+
+/* Login con identidad de marca */
+.auth-overlay{background:rgba(5,23,52,.67);backdrop-filter:blur(10px)}
+.auth-panel{
+  width:min(980px,100%);
+  display:grid;grid-template-columns:1.08fr .92fr;
+  background:#fff;border-radius:28px;overflow:hidden;
+  box-shadow:0 35px 90px rgba(0,0,0,.28)
+}
+.auth-visual{position:relative;min-height:560px;background:#042b63}
+.auth-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.auth-visual::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(3,24,58,.05) 0%,rgba(3,24,58,.24) 70%,rgba(3,24,58,.48) 100%)
+}
+.auth-visual-badge{
+  position:absolute;z-index:2;left:24px;bottom:24px;
+  color:#fff;background:rgba(3,27,65,.72);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;padding:9px 14px;
+  font-size:12px;font-weight:800;backdrop-filter:blur(8px)
+}
+.auth-card{
+  width:100%;border-radius:0;box-shadow:none;
+  padding:34px 34px 30px;
+  display:flex;flex-direction:column;justify-content:center
+}
+.brand-auth-logo{
+  width:78px;height:78px;object-fit:cover;border-radius:22px;background:#fff;
+  box-shadow:0 13px 30px rgba(4,43,99,.15)
+}
+.auth-card h1{font-size:30px;color:var(--dark);letter-spacing:-.8px;margin:18px 0 8px}
+.auth-card p{font-size:13px;line-height:1.55}
+.auth-card label{font-size:12px}
+.auth-card input{padding:13px 14px}
+
+@media(max-width:980px){
+  .auth-panel{grid-template-columns:1fr}
+  .auth-visual{min-height:220px}
+}
+@media(max-width:760px){
+  .brand-logo{width:52px;height:52px}
+  .brand-copy strong{font-size:15px}
+  .brand-hero{min-height:170px;border-radius:18px}
+  .brand-hero-badge{right:12px;bottom:12px;padding:9px 11px}
+  .brand-hero-badge strong{font-size:11px}
+  .sidebar-quote{display:none}
+}
