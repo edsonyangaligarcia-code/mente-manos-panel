@@ -288,21 +288,42 @@
       last=metrics(active.sales,active.ads);
     }
 
-    const lastLabel=lastDate ? humanDate(lastDate).replace(/\s+de\s+/g,' ') : 'sin cierre previo';
-    const lastAds=last ? `Último cierre ${lastLabel}: ${money(last.realAds)}` : 'Sin cierre previo';
-    const lastProfit=last ? `Último cierre ${lastLabel}: ${money(last.profit)}` : 'Sin cierre previo';
-    const lastConv=last ? `Último cierre ${lastLabel}: ${pct(last.conversion)}` : 'Sin cierre previo';
-    const lastRoas=last ? `Último cierre ${lastLabel}: ${DEC.format(last.roas)}` : 'Sin cierre previo';
+    const shortDate=lastDate
+      ? new Intl.DateTimeFormat('es-PE',{day:'2-digit',month:'short'}).format(toDate(lastDate)).replace('.','')
+      : '';
 
     const profitDelta=compareDelta(tm.profit,ym.profit);
     const deltaText=profitDelta==null?'sin comparación':`${profitDelta>=0?'+':''}${DEC.format(profitDelta*100)}% vs ayer`;
 
+    const adsLabel=hasTodayMeta ? 'Ads reales hoy' : `Ads reales · ${shortDate||'último cierre'}`;
+    const profitLabel=hasTodayMeta ? 'Resultado hoy' : `Resultado · ${shortDate||'último cierre'}`;
+    const convLabel=hasTodayMeta ? 'Conversión hoy' : `Conversión · ${shortDate||'último cierre'}`;
+    const roasLabel=hasTodayMeta ? 'ROAS hoy' : `ROAS · ${shortDate||'último cierre'}`;
+
+    const adsValue=hasTodayMeta ? money(tm.realAds) : (last ? money(last.realAds) : '—');
+    const profitValue=hasTodayMeta ? money(tm.profit) : (last ? money(last.profit) : '—');
+    const convValue=hasTodayMeta && tm.conversations ? pct(tm.conversion) : (last ? pct(last.conversion) : '—');
+    const roasValue=hasTodayMeta && tm.adSpend ? DEC.format(tm.roas) : (last ? DEC.format(last.roas) : '—');
+
+    const adsSub=hasTodayMeta
+      ? `${INT.format(tm.conversations)} chats`
+      : 'Hoy se actualiza al guardar Meta';
+    const profitSub=hasTodayMeta
+      ? deltaText
+      : 'Hoy se actualiza al guardar Meta';
+    const convSub=hasTodayMeta && tm.conversations
+      ? `${INT.format(tm.buyers)} pagos / ${INT.format(tm.conversations)} chats`
+      : 'Hoy se actualiza al guardar Meta';
+    const roasSub=hasTodayMeta && tm.adSpend
+      ? `Ads Meta ${money(tm.adSpend)}`
+      : 'Hoy se actualiza al guardar Meta';
+
     $('dailyPulse').innerHTML=[
       `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
-      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${hasTodayMeta?money(tm.realAds):'Pendiente'}</strong><small>${hasTodayMeta?(INT.format(tm.conversations)+' chats'):lastAds}</small></div>`,
-      `<div class="pulse-item ${hasTodayMeta?(tm.profit>=0?'good':'bad'):''}"><span>Resultado hoy</span><strong>${hasTodayMeta?money(tm.profit):'Pendiente'}</strong><small>${hasTodayMeta?deltaText:lastProfit}</small></div>`,
-      `<div class="pulse-item"><span>Conversión hoy</span><strong>${hasTodayMeta&&tm.conversations?pct(tm.conversion):'Pendiente'}</strong><small>${hasTodayMeta&&tm.conversations?`${INT.format(tm.buyers)} pagos / ${INT.format(tm.conversations)} chats`:lastConv}</small></div>`,
-      `<div class="pulse-item"><span>ROAS hoy</span><strong>${hasTodayMeta&&tm.adSpend?DEC.format(tm.roas):'Pendiente'}</strong><small>${hasTodayMeta&&tm.adSpend?`Ads Meta ${money(tm.adSpend)}`:lastRoas}</small></div>`
+      `<div class="pulse-item"><span>${adsLabel}</span><strong>${adsValue}</strong><small>${adsSub}</small></div>`,
+      `<div class="pulse-item ${hasTodayMeta?(tm.profit>=0?'good':''):(last&&last.profit>=0?'good':'')}"><span>${profitLabel}</span><strong>${profitValue}</strong><small>${profitSub}</small></div>`,
+      `<div class="pulse-item"><span>${convLabel}</span><strong>${convValue}</strong><small>${convSub}</small></div>`,
+      `<div class="pulse-item"><span>${roasLabel}</span><strong>${roasValue}</strong><small>${roasSub}</small></div>`
     ].join('');
   }
 
