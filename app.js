@@ -254,8 +254,8 @@
     const provisional=td.ads.length===0 ? 'Ads de hoy aún no cargados' : deltaText;
     $('dailyPulse').innerHTML=[
       `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
-      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${money(tm.realAds)}</strong><small>${INT.format(tm.conversations)} chats</small></div>`,
-      `<div class="pulse-item ${tm.profit>=0?'good':'bad'}"><span>Resultado hoy</span><strong>${money(tm.profit)}</strong><small>${provisional}</small></div>`,
+      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${tm.adSpend?money(tm.realAds):'—'}</strong><small>${tm.conversations?INT.format(tm.conversations)+' chats':'faltan datos de Meta'}</small></div>`,
+      `<div class="pulse-item ${tm.adSpend?(tm.profit>=0?'good':'bad'):''}"><span>Resultado hoy</span><strong>${tm.adSpend?money(tm.profit):'—'}</strong><small>${provisional}</small></div>`,
       `<div class="pulse-item"><span>Conversión hoy</span><strong>${tm.conversations?pct(tm.conversion):'—'}</strong><small>ayer ${ym.conversations?pct(ym.conversion):'—'}</small></div>`,
       `<div class="pulse-item"><span>ROAS hoy</span><strong>${tm.adSpend?DEC.format(tm.roas):'—'}</strong><small>ayer ${ym.adSpend?DEC.format(ym.roas):'—'}</small></div>`
     ].join('');
