@@ -1,14 +1,14 @@
-const CACHE='mym-panel-v9-brand';
+const CACHE='mym-panel-v10-friendly';
 const ASSETS=[
   './',
   './index.html',
-  './styles.css?v=20260926-1',
-  './app.js?v=20260926-1',
-  './config.js?v=20260926-1',
-  './historical-data.js?v=20260926-1',
+  './styles.css?v=20260926-2',
+  './app.js?v=20260926-2',
+  './config.js?v=20260926-2',
+  './historical-data.js?v=20260926-2',
   './manifest.json',
-  './brand-logo.png?v=20260926-1',
-  './brand-cover.png?v=20260926-1'
+  './brand-logo.png?v=20260926-2',
+  './brand-cover.png?v=20260926-2'
 ];
 
 self.addEventListener('install', event => {
