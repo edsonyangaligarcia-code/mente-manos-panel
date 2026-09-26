@@ -809,15 +809,9 @@
     $('todayLabel').textContent=new Intl.DateTimeFormat('es-PE',{weekday:'short',day:'2-digit',month:'short'}).format(new Date()); $('saleDate').value=isoToday(); $('saleTime').value=new Date().toTimeString().slice(0,5); $('adsDate').value=isoToday(); if($('daySalesDate')) $('daySalesDate').value=isoToday(); bind();
     await initSupabase(); if(state.mode==='local' || state.user){ initStatsDates(); populateCampaigns(); resetSaleForm(); loadAdsForDate(); renderAll(); }
 
-    // Estabilidad: el panel funciona online sin Service Worker.
-    // Limpiamos registros/cachés PWA antiguos para evitar mezclar versiones.
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.getRegistrations()
-        .then(regs=>Promise.all(regs.map(r=>r.unregister())))
-        .catch(()=>{});
-    }
-    if('caches' in window){
-      caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+    // PWA segura: Service Worker mínimo, sin cachear ni interceptar requests.
+    if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+      navigator.serviceWorker.register('./sw.js?v=20260926-7').catch(()=>{});
     }
   }
   document.addEventListener('DOMContentLoaded',init);
