@@ -48,6 +48,12 @@
   function realMultiplier(){ return 1 + num(state.settings.ad_surcharge_pct)/100; }
   function activeCampaigns(){ return state.settings.active_campaigns||DEFAULT_SETTINGS.active_campaigns; }
   function isActiveCampaign(campaign){ return activeCampaigns().includes(campaign); }
+  function onlyActiveBusinessData(sales,ads){
+    return {
+      sales:sales.filter(s=>isActiveCampaign(s.campaign)),
+      ads:ads.filter(a=>isActiveCampaign(a.campaign))
+    };
+  }
 
   function seedSales(){
     return (window.MYM_SEED?.sales||[]).map(s=>({
@@ -226,7 +232,10 @@
   function kpi(label,value,sub='',tone=''){ return `<div class="kpi ${tone}"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`; }
 
   function renderDashboard(){
-    const {sales,ads}=filterData(); const m=metrics(sales,ads);
+    const raw=filterData();
+    const active=onlyActiveBusinessData(raw.sales,raw.ads);
+    const sales=active.sales, ads=active.ads;
+    const m=metrics(sales,ads);
     const hasAds=ads.length>0 && m.adSpend>0;
     const hasChats=m.conversations>0;
     $('kpiGrid').innerHTML=[
@@ -256,7 +265,8 @@
 
   function renderDailyPulse(){
     const today=isoToday(), yesterday=dateAdd(today,-1);
-    const td=filterData('all','all',{start:today,end:today}), yd=filterData('all','all',{start:yesterday,end:yesterday});
+    const tdRaw=filterData('all','all',{start:today,end:today}), ydRaw=filterData('all','all',{start:yesterday,end:yesterday});
+    const td=onlyActiveBusinessData(tdRaw.sales,tdRaw.ads), yd=onlyActiveBusinessData(ydRaw.sales,ydRaw.ads);
     const tm=metrics(td.sales,td.ads), ym=metrics(yd.sales,yd.ads);
     const profitDelta=compareDelta(tm.profit,ym.profit);
     const deltaText=profitDelta==null?'sin comparación':`${profitDelta>=0?'+':''}${DEC.format(profitDelta*100)}% vs ayer`;
@@ -314,7 +324,8 @@
     const currentBounds=rangeBounds(state.range);
     const prevBounds=previousBounds(currentBounds);
     const current=metrics(sales,ads);
-    const prevData=filterData('all','all',prevBounds);
+    const prevRaw=filterData('all','all',prevBounds);
+    const prevData=onlyActiveBusinessData(prevRaw.sales,prevRaw.ads);
     const previous=metrics(prevData.sales,prevData.ads);
     $('comparisonLabel').textContent=`${humanDate(prevBounds.start)} – ${humanDate(prevBounds.end)}`;
     const currentHasAds=current.adSpend>0, previousHasAds=previous.adSpend>0;
@@ -398,7 +409,11 @@
     }).join('') || '<p>Sin datos en este periodo.</p>';
   }
   function renderGoal(){
-    const anchor=isoToday(), start=`${anchor.slice(0,7)}-01`, {sales,ads}=filterData('all','all',{start,end:anchor}); const m=metrics(sales,ads), goal=num(state.settings.monthly_goal)||10000;
+    const anchor=isoToday(), start=`${anchor.slice(0,7)}-01`;
+    const raw=filterData('all','all',{start,end:anchor});
+    const active=onlyActiveBusinessData(raw.sales,raw.ads);
+    const sales=active.sales, ads=active.ads;
+    const m=metrics(sales,ads), goal=num(state.settings.monthly_goal)||10000;
     const pctv=goal?m.revenue/goal:0; $('goalMonthLabel').textContent=monthName(anchor); $('goalRevenue').textContent=money(m.revenue); $('goalTarget').textContent=`de ${money(goal)}`; $('goalBar').style.width=`${Math.min(100,pctv*100)}%`; $('goalPct').textContent=`${DEC.format(pctv*100)}%`; $('goalRemaining').textContent=m.revenue>=goal?'Meta alcanzada':`Faltan ${money(goal-m.revenue)}`;
     const d=toDate(anchor), elapsed=d.getDate(), days=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(), projected=elapsed?m.revenue/elapsed*days:0; $('monthProjection').textContent=money(projected); $('projectionHint').textContent=`Ritmo medio del mes (${elapsed} días transcurridos).`;
   }
@@ -629,12 +644,17 @@
   async function saveSettings(){ readSettingsForm(); try{ if(state.mode==='supabase')await cloudSaveSettings(); else saveLocal(); populateCampaigns(); renderAll(); toast('Configuración guardada.'); }catch(err){console.error(err);toast('No se pudo guardar configuración.',true)} }
 
   function baseMetricsForProjection(){
-    const base=$('projBase').value; if(base==='manual') return null; const {sales,ads}=filterData(base==='all'?'all':base); return metrics(sales,ads);
+    const base=$('projBase').value; if(base==='manual') return null;
+    const raw=filterData(base==='all'?'all':base);
+    const active=onlyActiveBusinessData(raw.sales,raw.ads);
+    return metrics(active.sales,active.ads);
   }
   function renderScaleRoadmap(roas, base){
     const body=$('scaleRoadmap'); if(!body) return;
     if(!roas){ body.innerHTML='<tr><td colspan="5">Necesitamos ROAS para crear la ruta.</td></tr>'; return; }
-    const uniqueDays=new Set((filterData($('projBase').value==='all'?'all':($('projBase').value==='manual'?'30':$('projBase').value)).ads||[]).filter(a=>num(a.ad_spend)>0).map(a=>a.ad_date));
+    const roadmapRaw=filterData($('projBase').value==='all'?'all':($('projBase').value==='manual'?'30':$('projBase').value));
+    const roadmapActive=onlyActiveBusinessData(roadmapRaw.sales,roadmapRaw.ads);
+    const uniqueDays=new Set((roadmapActive.ads||[]).filter(a=>num(a.ad_spend)>0).map(a=>a.ad_date));
     const currentDaily=base && uniqueDays.size ? base.adSpend/uniqueDays.size : num($('projBudget').value);
     const target=num($('projGoal').value)||num(state.settings.monthly_goal);
     const targetBudget=target/(roas*30);
@@ -660,7 +680,7 @@
     else $('projRoas').readOnly=false;
     const roas=num($('projRoas').value), budget=num($('projBudget').value), goal=num($('projGoal').value)||num(state.settings.monthly_goal);
     const registeredAds=budget*30, revenue=registeredAds*roas, realAds=registeredAds*realMultiplier(), profit=revenue-realAds-num(state.settings.chatgpt_cost), margin=revenue?profit/revenue:0;
-    const fallback=filterData('30'), cpc=base?.cpc || metrics(fallback.sales,fallback.ads).cpc, chats=cpc?registeredAds/cpc:0, goalBudget=roas?goal/(roas*30):0;
+    const fallbackRaw=filterData('30'), fallback=onlyActiveBusinessData(fallbackRaw.sales,fallbackRaw.ads), cpc=base?.cpc || metrics(fallback.sales,fallback.ads).cpc, chats=cpc?registeredAds/cpc:0, goalBudget=roas?goal/(roas*30):0;
     $('projRevenue').textContent=money(revenue); $('projAds').textContent=money(registeredAds); $('projRealAds').textContent=money(realAds); $('projProfit').textContent=money(profit); $('projMargin').textContent=pct(margin); $('projChats').textContent=INT.format(chats); $('projGoalBudget').textContent=`${money(goalBudget)}/día`;
     if($('projConservative')) $('projConservative').textContent=money(registeredAds*(roas*.85));
     if($('projBaseRevenue')) $('projBaseRevenue').textContent=money(revenue);
