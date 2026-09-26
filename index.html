@@ -5,24 +5,27 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#042b63" />
   <title>Mente & Manos — Panel</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="brand-mark.png?v=20260926-5" />
-  <link rel="stylesheet" href="styles.css?v=20260926-5" />
+  <link rel="icon" type="image/png" href="brand-mark.png?v=20260926-6" />
+  <link rel="stylesheet" href="styles.css?v=20260926-6" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260926-5"></script>
-  <script src="historical-data.js?v=20260926-5"></script>
+  <script src="config.js?v=20260926-6"></script>
+  <script src="historical-data.js?v=20260926-6"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <div id="authOverlay" class="auth-overlay hidden">
     <div class="auth-panel">
-      <div class="auth-visual">
-        <img src="brand-cover.png?v=20260926-5" alt="Mente & Manos" class="auth-cover" />
+      <div class="auth-visual auth-visual-safe">
+        <img src="brand-mark.png?v=20260926-6" alt="Mente & Manos" class="auth-safe-mark" />
+        <div class="auth-safe-copy">
+          <strong>Mente &amp; Manos</strong>
+          <span>Donde la mente diseña y las manos crean.</span>
+        </div>
       </div>
       <div class="auth-card">
-        <img src="brand-logo.png?v=20260926-5" alt="Mente & Manos" class="brand-auth-logo" />
+        <img src="brand-logo.png?v=20260926-6" alt="Mente & Manos" class="brand-auth-logo" />
         <h1>Bienvenido</h1>
         <p>Ventas, publicidad, rentabilidad y proyecciones de Mente & Manos en un solo lugar.</p>
         <label>Email<input id="authEmail" type="email" placeholder="tu@email.com" autocomplete="email" /></label>
@@ -40,7 +43,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-symbol" aria-hidden="true">
-          <img src="brand-mark.png?v=20260926-5" alt="" class="brand-symbol-image" />
+          <img src="brand-mark.png?v=20260926-6" alt="" class="brand-symbol-image" />
         </div>
         <div class="brand-copy"><strong>Mente &amp; Manos</strong><span>Capacitación Integral</span></div>
       </div>
@@ -75,7 +78,7 @@
         <article class="welcome-panel">
           <div class="welcome-brand">
             <div class="welcome-logo-wrap">
-              <img src="brand-logo.png?v=20260926-5" alt="Mente & Manos" class="welcome-logo" />
+              <img src="brand-logo.png?v=20260926-6" alt="Mente & Manos" class="welcome-logo" />
             </div>
             <div>
               <span class="welcome-kicker">Mente &amp; Manos</span>
@@ -345,6 +348,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260926-5"></script>
+  <script src="app.js?v=20260926-6"></script>
 </body>
 </html>
