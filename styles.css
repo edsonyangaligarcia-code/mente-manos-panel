@@ -320,3 +320,107 @@ body{color:var(--ink)}
   .brand-hero-badge strong{font-size:11px}
   .sidebar-quote{display:none}
 }
+
+
+/* v10 — refinamiento visual amigable */
+.sidebar::after{display:none}
+.brand{padding:0 8px 22px}
+.brand-logo{width:54px;height:54px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.brand-copy strong{font-size:16px}
+.brand-copy span{font-size:11px;color:#c7d6ef}
+.nav-item{padding:12px 12px;border-radius:13px}
+.nav-item.active{background:#1769e0;box-shadow:0 8px 20px rgba(23,105,224,.25)}
+.sidebar-footer{gap:10px}
+.storage-badge{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.12)}
+
+.topbar{height:88px}
+.topbar h1{font-size:26px}
+.main{padding:0 26px 36px}
+.toolbar{margin-bottom:16px}
+
+.welcome-panel{
+  display:flex;align-items:center;justify-content:space-between;gap:22px;
+  min-height:118px;margin-bottom:18px;padding:20px 22px;
+  border:1px solid #e2eaf3;border-radius:22px;
+  background:
+    radial-gradient(circle at 92% 15%,rgba(255,152,0,.12),transparent 30%),
+    linear-gradient(135deg,#ffffff 0%,#f7faff 65%,#fffaf3 100%);
+  box-shadow:0 10px 30px rgba(8,39,91,.06)
+}
+.welcome-brand{display:flex;align-items:center;gap:16px;min-width:0}
+.welcome-logo-wrap{
+  width:68px;height:68px;flex:0 0 auto;border-radius:20px;
+  background:#fff;border:1px solid #e3eaf2;padding:5px;
+  box-shadow:0 10px 24px rgba(5,43,99,.10)
+}
+.welcome-logo{width:100%;height:100%;object-fit:cover;border-radius:15px}
+.welcome-kicker{
+  display:block;margin-bottom:3px;color:#e47700;font-size:11px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.9px
+}
+.welcome-panel h2{margin:0;color:#0b2d65;font-size:23px;letter-spacing:-.45px;line-height:1.15}
+.welcome-panel p{margin:6px 0 0;color:#6c7c94;font-size:13px}
+.welcome-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.welcome-tags span{
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #dfe8f4;background:#fff;color:#315279;
+  border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800
+}
+.welcome-tags span:nth-child(2){border-color:#ffe0ba;color:#a95c00;background:#fff9f1}
+
+.kpi{box-shadow:0 8px 24px rgba(8,39,91,.045)}
+.kpi .value{font-size:23px}
+.daily-pulse{gap:12px}
+.pulse-item{
+  position:relative;overflow:hidden;background:#fff;color:#0d2f68;
+  border:1px solid #e1e9f3;box-shadow:0 8px 22px rgba(8,39,91,.045)
+}
+.pulse-item::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;background:#1769e0
+}
+.pulse-item:nth-child(2)::before{background:#ff9800}
+.pulse-item:nth-child(3)::before{background:#22a45d}
+.pulse-item:nth-child(4)::before{background:#7b61d1}
+.pulse-item:nth-child(5)::before{background:#0ea5a4}
+.pulse-item span{color:#657892}
+.pulse-item strong{color:#0c2f69}
+.pulse-item small{color:#8a97a9}
+.pulse-item.good strong{color:#14833b}
+.pulse-item.bad strong{color:#c73535}
+
+.alerts-card{box-shadow:0 8px 24px rgba(8,39,91,.045)}
+.alert-row{background:#fff}
+.context-badge{background:#f0f6ff;color:#315b8e}
+.segmented{background:#e9eff6}
+.segmented button.active{background:#fff;box-shadow:0 3px 10px rgba(8,39,91,.08)}
+
+.auth-visual{
+  min-height:520px;padding:28px;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(35,105,220,.35),transparent 35%),
+    linear-gradient(145deg,#031d45 0%,#06336f 55%,#3f2a18 100%)
+}
+.auth-cover{
+  position:relative;inset:auto;width:100%;height:auto;max-height:none;
+  object-fit:contain;border-radius:22px;
+  box-shadow:0 20px 45px rgba(0,0,0,.28)
+}
+.auth-visual::after{display:none}
+.auth-card{padding:38px 36px}
+.brand-auth-logo{width:72px;height:72px;border-radius:20px}
+
+@media(max-width:980px){
+  .welcome-panel{align-items:flex-start;flex-direction:column}
+  .welcome-tags{justify-content:flex-start}
+}
+@media(max-width:760px){
+  .main{padding:0 14px 28px}
+  .welcome-panel{min-height:auto;padding:16px;border-radius:18px}
+  .welcome-logo-wrap{width:58px;height:58px;border-radius:17px}
+  .welcome-panel h2{font-size:19px}
+  .welcome-panel p{font-size:12px}
+  .welcome-tags span{padding:7px 9px}
+  .daily-pulse{gap:9px}
+  .auth-visual{min-height:210px;padding:16px}
+  .auth-cover{border-radius:16px}
+}
