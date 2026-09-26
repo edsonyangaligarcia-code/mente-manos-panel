@@ -1,11 +1,9 @@
-self.addEventListener('install', () => self.skipWaiting());
-
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-    await self.clients.claim();
-  })());
+self.addEventListener('install', event => {
+  self.skipWaiting();
 });
 
-// Sin interceptar requests: el navegador usa red/caché HTTP normal.
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Intencionalmente sin fetch handler y sin Cache Storage.
