@@ -7,11 +7,11 @@
   <title>Mente & Manos — Panel</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260925-4" />
+  <link rel="stylesheet" href="styles.css?v=20260925-5" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260925-4"></script>
-  <script src="historical-data.js?v=20260925-4"></script>
+  <script src="config.js?v=20260925-5"></script>
+  <script src="historical-data.js?v=20260925-5"></script>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -169,6 +169,32 @@
             <p class="helper-note">Si negocias un monto diferente, solo escribe el valor real. El panel no lo reemplaza ni lo fuerza a S/29.90.</p>
           </aside>
         </div>
+
+        <article class="card day-sales-card">
+          <div class="card-head day-sales-head">
+            <div>
+              <h3>Ventas del día</h3>
+              <p>Revisa, corrige o elimina una compra sin tocar la base de datos manualmente.</p>
+            </div>
+            <div class="day-sales-tools">
+              <label>Fecha<input id="daySalesDate" type="date" /></label>
+              <div class="day-sales-summary">
+                <span id="daySalesCount">0 ventas</span>
+                <strong id="daySalesTotal">S/0.00</strong>
+              </div>
+            </div>
+          </div>
+          <div id="editingBanner" class="editing-banner hidden">
+            <div><strong>Editando venta</strong><span id="editingBannerText"></span></div>
+            <button id="cancelEditSale" type="button" class="btn ghost compact">Cancelar edición</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table sales-day-table">
+              <thead><tr><th>Hora</th><th>Origen</th><th>Oferta</th><th>Tipo</th><th>Seguimiento</th><th>Monto</th><th>Acciones</th></tr></thead>
+              <tbody id="daySalesRows"></tbody>
+            </table>
+          </div>
+        </article>
       </section>
 
       <section id="view-ads" class="view">
@@ -271,6 +297,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260925-4"></script>
+  <script src="app.js?v=20260925-5"></script>
 </body>
 </html>
