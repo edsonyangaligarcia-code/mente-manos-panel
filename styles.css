@@ -563,3 +563,8 @@ body{color:var(--ink)}
   .auth-safe-mark{width:110px;height:110px;border-width:5px}
   .auth-safe-copy strong{font-size:21px}
 }
+
+
+/* v15 — coherencia temporal del dashboard */
+.daily-pulse.hidden{display:none!important;margin:0!important}
+#dailyPulse:not(.hidden){margin-top:0}
