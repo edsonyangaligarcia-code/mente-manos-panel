@@ -7,3 +7,5 @@ self.addEventListener('activate', event => {
 });
 
 // Intencionalmente sin fetch handler y sin Cache Storage.
+
+// dashboard-clean-v11
