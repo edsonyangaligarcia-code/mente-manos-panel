@@ -253,7 +253,6 @@
     renderDailyChart(groupDaily(sales,ads));
     renderOfferChart(sales);
     renderCampaignCards(campaignRows);
-    renderDailyPulse();
     renderCampaignAlerts();
     renderPeriodComparison(sales,ads);
     renderRpcTrendChart(groupDaily(sales,ads));
