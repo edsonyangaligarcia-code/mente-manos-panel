@@ -265,18 +265,44 @@
 
   function renderDailyPulse(){
     const today=isoToday(), yesterday=dateAdd(today,-1);
-    const tdRaw=filterData('all','all',{start:today,end:today}), ydRaw=filterData('all','all',{start:yesterday,end:yesterday});
-    const td=onlyActiveBusinessData(tdRaw.sales,tdRaw.ads), yd=onlyActiveBusinessData(ydRaw.sales,ydRaw.ads);
+    const tdRaw=filterData('all','all',{start:today,end:today});
+    const ydRaw=filterData('all','all',{start:yesterday,end:yesterday});
+    const td=onlyActiveBusinessData(tdRaw.sales,tdRaw.ads);
+    const yd=onlyActiveBusinessData(ydRaw.sales,ydRaw.ads);
     const tm=metrics(td.sales,td.ads), ym=metrics(yd.sales,yd.ads);
+
+    const hasTodayMeta=td.ads.some(a=>num(a.ad_spend)>0 || num(a.conversations)>0);
+
+    // Último día anterior con datos reales de Meta.
+    const metaDates=[...new Set(
+      state.ads
+        .filter(a=>isActiveCampaign(a.campaign) && a.ad_date<today && (num(a.ad_spend)>0 || num(a.conversations)>0))
+        .map(a=>a.ad_date)
+    )].sort();
+
+    const lastDate=metaDates.at(-1) || null;
+    let last=null;
+    if(lastDate){
+      const raw=filterData('all','all',{start:lastDate,end:lastDate});
+      const active=onlyActiveBusinessData(raw.sales,raw.ads);
+      last=metrics(active.sales,active.ads);
+    }
+
+    const lastLabel=lastDate ? humanDate(lastDate).replace(/\s+de\s+/g,' ') : 'sin cierre previo';
+    const lastAds=last ? `Último cierre ${lastLabel}: ${money(last.realAds)}` : 'Sin cierre previo';
+    const lastProfit=last ? `Último cierre ${lastLabel}: ${money(last.profit)}` : 'Sin cierre previo';
+    const lastConv=last ? `Último cierre ${lastLabel}: ${pct(last.conversion)}` : 'Sin cierre previo';
+    const lastRoas=last ? `Último cierre ${lastLabel}: ${DEC.format(last.roas)}` : 'Sin cierre previo';
+
     const profitDelta=compareDelta(tm.profit,ym.profit);
     const deltaText=profitDelta==null?'sin comparación':`${profitDelta>=0?'+':''}${DEC.format(profitDelta*100)}% vs ayer`;
-    const provisional=td.ads.length===0 ? 'Ads de hoy aún no cargados' : deltaText;
+
     $('dailyPulse').innerHTML=[
       `<div class="pulse-item"><span>Facturación hoy</span><strong>${money(tm.revenue)}</strong><small>${INT.format(tm.buyers)} compradores</small></div>`,
-      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${tm.adSpend?money(tm.realAds):'—'}</strong><small>${tm.conversations?INT.format(tm.conversations)+' chats':'faltan datos de Meta'}</small></div>`,
-      `<div class="pulse-item ${tm.adSpend?(tm.profit>=0?'good':'bad'):''}"><span>Resultado hoy</span><strong>${tm.adSpend?money(tm.profit):'—'}</strong><small>${provisional}</small></div>`,
-      `<div class="pulse-item"><span>Conversión hoy</span><strong>${tm.conversations?pct(tm.conversion):'—'}</strong><small>ayer ${ym.conversations?pct(ym.conversion):'—'}</small></div>`,
-      `<div class="pulse-item"><span>ROAS hoy</span><strong>${tm.adSpend?DEC.format(tm.roas):'—'}</strong><small>ayer ${ym.adSpend?DEC.format(ym.roas):'—'}</small></div>`
+      `<div class="pulse-item"><span>Ads reales hoy</span><strong>${hasTodayMeta?money(tm.realAds):'Pendiente'}</strong><small>${hasTodayMeta?(INT.format(tm.conversations)+' chats'):lastAds}</small></div>`,
+      `<div class="pulse-item ${hasTodayMeta?(tm.profit>=0?'good':'bad'):''}"><span>Resultado hoy</span><strong>${hasTodayMeta?money(tm.profit):'Pendiente'}</strong><small>${hasTodayMeta?deltaText:lastProfit}</small></div>`,
+      `<div class="pulse-item"><span>Conversión hoy</span><strong>${hasTodayMeta&&tm.conversations?pct(tm.conversion):'Pendiente'}</strong><small>${hasTodayMeta&&tm.conversations?`${INT.format(tm.buyers)} pagos / ${INT.format(tm.conversations)} chats`:lastConv}</small></div>`,
+      `<div class="pulse-item"><span>ROAS hoy</span><strong>${hasTodayMeta&&tm.adSpend?DEC.format(tm.roas):'Pendiente'}</strong><small>${hasTodayMeta&&tm.adSpend?`Ads Meta ${money(tm.adSpend)}`:lastRoas}</small></div>`
     ].join('');
   }
 
