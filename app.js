@@ -157,6 +157,26 @@
     return {start:dateAdd(today,-days+1),end:today};
   }
   function within(d,start,end){ return d>=start && d<=end; }
+  function daysInclusive(start,end){
+    return Math.max(1, Math.round((toDate(end)-toDate(start))/86400000)+1);
+  }
+  function previousBounds(bounds){
+    const len=daysInclusive(bounds.start,bounds.end);
+    const end=dateAdd(bounds.start,-1);
+    const start=dateAdd(end,-len+1);
+    return {start,end};
+  }
+  function hourlyRevenue(sales){
+    const bins=Array.from({length:12},(_,i)=>({label:`${String(i*2).padStart(2,'0')}:00–${String((i+1)*2).padStart(2,'0')}:00`,revenue:0,buyers:0}));
+    for(const s of sales){
+      const h=parseInt(String(s.sale_time||'').slice(0,2),10);
+      if(Number.isFinite(h) && h>=0 && h<24){
+        const b=bins[Math.floor(h/2)];
+        b.revenue+=num(s.amount); b.buyers++;
+      }
+    }
+    return bins;
+  }
   function filterData(range=state.range, campaign='all', custom=null){
     const b=custom||rangeBounds(range);
     const sales=state.sales.filter(x=>within(x.sale_date,b.start,b.end) && (campaign==='all'||x.campaign===campaign));
@@ -217,6 +237,10 @@
     renderCampaignCards(campaignRows);
     renderDailyPulse();
     renderCampaignAlerts();
+    renderPeriodComparison(sales,ads);
+    renderRpcTrendChart(groupDaily(sales,ads));
+    renderCampaignProfitChart(campaignRows);
+    renderHourlyRevenueChart(sales);
     renderGoal();
     renderInsights(m,campaignRows,sales);
   }
@@ -256,6 +280,87 @@
       return {campaign,tone:'green',icon:'✓',badge:'Saludable',msg:`ROAS promedio reciente ${DEC.format(avg)}. Sin alerta sostenida.`};
     });
     $('campaignAlerts').innerHTML=rows.map(x=>`<div class="alert-row ${x.tone}"><div class="alert-main"><div class="alert-icon">${x.icon}</div><div><strong>${escapeHtml(x.campaign)}</strong><p>${x.msg}</p></div></div><span class="alert-badge">${x.badge}</span></div>`).join('');
+  }
+
+  function deltaBadge(current, previous, inverse=false){
+    if(previous===0){
+      if(current===0) return '<span class="comparison-delta neutral">0%</span>';
+      return '<span class="comparison-delta up">Nuevo</span>';
+    }
+    const d=(current-previous)/Math.abs(previous);
+    const good=inverse ? d<=0 : d>=0;
+    const cls=Math.abs(d)<0.005?'neutral':(good?'up':'down');
+    const arrow=Math.abs(d)<0.005?'':(d>=0?'↑ ':'↓ ');
+    return `<span class="comparison-delta ${cls}">${arrow}${DEC.format(Math.abs(d)*100)}%</span>`;
+  }
+
+  function renderPeriodComparison(sales,ads){
+    const el=$('periodComparison'); if(!el) return;
+    if(state.range==='all'){
+      el.innerHTML='<div class="comparison-empty">La comparación automática no se aplica a “Todo”. Elige Hoy, Ayer, 7 días, 30 días o Este mes.</div>';
+      $('comparisonLabel').textContent='sin comparación';
+      return;
+    }
+    const currentBounds=rangeBounds(state.range);
+    const prevBounds=previousBounds(currentBounds);
+    const current=metrics(sales,ads);
+    const prevData=filterData('all','all',prevBounds);
+    const previous=metrics(prevData.sales,prevData.ads);
+    $('comparisonLabel').textContent=`${humanDate(prevBounds.start)} – ${humanDate(prevBounds.end)}`;
+    const items=[
+      ['Facturación',money(current.revenue),money(previous.revenue),deltaBadge(current.revenue,previous.revenue)],
+      ['Resultado real',money(current.profit),money(previous.profit),deltaBadge(current.profit,previous.profit)],
+      ['Compradores',INT.format(current.buyers),INT.format(previous.buyers),deltaBadge(current.buyers,previous.buyers)],
+      ['S/ por chat',current.conversations?money(current.rpc):'—',previous.conversations?money(previous.rpc):'—',current.conversations&&previous.conversations?deltaBadge(current.rpc,previous.rpc):'<span class="comparison-delta neutral">—</span>'],
+      ['ROAS',current.adSpend?DEC.format(current.roas):'—',previous.adSpend?DEC.format(previous.roas):'—',current.adSpend&&previous.adSpend?deltaBadge(current.roas,previous.roas):'<span class="comparison-delta neutral">—</span>']
+    ];
+    el.innerHTML=items.map(([label,now,before,delta])=>`
+      <div class="comparison-item">
+        <span>${label}</span>
+        <strong>${now}</strong>
+        <div class="comparison-foot"><small>Antes: ${before}</small>${delta}</div>
+      </div>`).join('');
+  }
+
+  function renderRpcTrendChart(rows){
+    if(!window.Chart || !$('rpcTrendChart')) return;
+    state.charts.rpc?.destroy();
+    const values=rows.map(x=>x.conversations?x.revenue/x.conversations:null);
+    state.charts.rpc=new Chart($('rpcTrendChart'),{
+      type:'line',
+      data:{labels:rows.map(x=>x.date.slice(5).split('-').reverse().join('/')),datasets:[{
+        label:'S/ por conversación',data:values,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.10)',tension:.32,fill:true,pointRadius:3,spanGaps:false
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw==null?'Sin conversaciones':`S/ por chat: ${money(c.raw)}`}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:'#eef0f3'},ticks:{font:{size:10},callback:v=>`S/${v}`}}}}
+    });
+  }
+
+  function renderCampaignProfitChart(rows){
+    if(!window.Chart || !$('campaignProfitChart')) return;
+    state.charts.campaignProfit?.destroy();
+    const sorted=[...rows].sort((a,b)=>b.profit-a.profit).slice(0,8);
+    state.charts.campaignProfit=new Chart($('campaignProfitChart'),{
+      type:'bar',
+      data:{labels:sorted.map(x=>x.campaign),datasets:[{
+        label:'Resultado real',data:sorted.map(x=>x.profit),
+        backgroundColor:sorted.map(x=>x.profit>=0?'rgba(34,197,94,.72)':'rgba(239,68,68,.72)'),
+        borderRadius:7
+      }]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Resultado: ${money(c.raw)}`}}},scales:{x:{grid:{color:'#eef0f3'},ticks:{font:{size:10},callback:v=>`S/${v}`}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+    });
+  }
+
+  function renderHourlyRevenueChart(sales){
+    if(!window.Chart || !$('hourlyRevenueChart')) return;
+    state.charts.hourly?.destroy();
+    const bins=hourlyRevenue(sales);
+    state.charts.hourly=new Chart($('hourlyRevenueChart'),{
+      type:'bar',
+      data:{labels:bins.map(x=>x.label),datasets:[{
+        label:'Facturación',data:bins.map(x=>x.revenue),backgroundColor:'rgba(17,24,39,.78)',borderRadius:6
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Facturación: ${money(c.raw)} · ${bins[c.dataIndex].buyers} ventas`}}},scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:55,minRotation:35}},y:{beginAtZero:true,grid:{color:'#eef0f3'},ticks:{font:{size:10},callback:v=>`S/${v}`}}}}
+    });
   }
 
   function renderDailyChart(rows){
